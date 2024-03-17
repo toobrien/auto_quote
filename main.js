@@ -1,6 +1,5 @@
 const base_client   = require("./ibkr/base_client");
 const readline      = require("readline");
-const CONFIG        = require("./config");
 const IN_MAP        = {};
 
 
