@@ -4,7 +4,8 @@ const IN_MAP        = {};
 
 
 // https://ibkrcampus.com/ibkr-api-page/webapi-ref/#place-order
-// 637533450
+
+// node main.js 637533450 0.25 4
 
 
 readline.emitKeypressEvents(process.stdin);
@@ -39,6 +40,13 @@ process.stdin.on(
     }
 );
 
-const CLIENT = new base_client();
+const CLIENT    = new base_client();
+const CONID     = parseInt(process.argv[2]);
+const TICK      = parseFloat(process.argv[3]);
+const SHIFT     = parseInt(process.argv[4]) * TICK;
+
+console.log(`CONID: ${CONID}`);
+console.log(`TICK:  ${TICK}`);
+console.log(`SHIFT: ${SHIFT}`);
 
 setInterval(() => { return; }, 1000);
