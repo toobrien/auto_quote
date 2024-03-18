@@ -1,6 +1,6 @@
-const base_client   = require("./ibkr/base_client");
-const readline      = require("readline");
-const IN_MAP        = {};
+const { base_client, mdf }  = require("./ibkr/base_client");
+const readline              = require("readline");
+const IN_MAP                = {};
 
 
 // https://ibkrcampus.com/ibkr-api-page/webapi-ref/#place-order
@@ -42,17 +42,43 @@ process.stdin.on(
 
 const CLIENT    = new base_client();
 const CONID     = parseInt(process.argv[2]);
-const TICK      = parseFloat(process.argv[3]);
-const SHIFT     = parseInt(process.argv[4]) * TICK;
+const TICK_SIZE = parseFloat(process.argv[3]);
+const SHIFT     = parseInt(process.argv[4]) * TICK_SIZE;
 
 let BID_ID      = null;
 let ASK_ID      = null;
 let BID_PX      = 0;
 let ASK_PX      = 0;
-let MID_PX      = 0; 
+let MID_PX      = 0;
+let L1_BID_PX   = 0;
+let L1_ASK_PX   = 0;
 
-console.log(`CONID: ${CONID}`);
-console.log(`TICK:  ${TICK}`);
-console.log(`SHIFT: ${SHIFT}`);
+CLIENT.set_ws_handlers(
+    msg_handler = (evt) => {
+
+        if (evt.data) {
+
+            let msg = JSON.parse(evt.data);
+
+            //console.log(msg);
+
+            if (msg[mdf.bid]) L1_BID_PX = parseFloat(msg[mdf.bid]);
+            if (msg[mdf.ask]) L1_ASK_PX = parseFloat(msg[mdf.ask]);
+
+            let ticks   = (L1_ASK_PX - L1_BID_PX) / TICK_SIZE;
+            MID_PX      = L1_BID_PX + Math.ceil(ticks / 2) * TICK_SIZE;
+
+            console.log(`${L1_BID_PX}\t${MID_PX}\t${L1_ASK_PX}`);
+
+        }
+
+    }
+);
+
+CLIENT.sub_market_data([ CONID ], [ mdf.bid, mdf.ask ]);
+
+console.log(`CONID:      ${CONID}`);
+console.log(`TICK_SIZE:  ${TICK_SIZE}`);
+console.log(`SHIFT:      ${SHIFT}`);
 
 setInterval(() => { return; }, 1000);

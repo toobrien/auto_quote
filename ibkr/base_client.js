@@ -1,4 +1,4 @@
-
+const WebSocket = require("ws");
 
 // market data fields
 
@@ -31,11 +31,11 @@ class base_client {
         this.ws_uri     = `ws://${host}:${port}/v1/api/ws`;
         this.ws         = null;
 
-        let def_ws_handler  = async (evt) =>  {
+        let def_ws_handler = (evt) =>  {
 
             if (evt.data) {
             
-                let msg = JSON.parse(await evt.data.text());
+                let msg = JSON.parse(evt.data);
 
                 console.log(JSON.stringify(msg, null, 2));
             
@@ -243,4 +243,4 @@ class base_client {
 
 }
 
-module.exports = base_client;
+module.exports = { base_client, mdf };
