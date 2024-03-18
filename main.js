@@ -11,10 +11,57 @@ const IN_MAP                = {};
 readline.emitKeypressEvents(process.stdin);
 process.stdin.setRawMode(true);
 
-function inc_spread(str, key)   { console.log(str); console.log(key);}
-function dec_spread(str, key)   { console.log(str); console.log(key);}
-function inc_offset(str, key)   { console.log(str); console.log(key);}
-function dec_offset(str, key)   { console.log(str); console.log(key);}
+
+function update_quote() {
+
+    BID_PX = MID_PX - WIDTH + OFFSET;
+    ASK_PX = MID_PX + WIDTH + OFFSET;
+
+    console.log(`${String(BID_PX).padStart(10)}${String(ASK_PX).padStart(10)}${String((ASK_PX - BID_PX) / TICK_SIZE).padStart(10)}${String(OFFSET).padStart(10)}`);
+
+}
+
+
+function inc_spread(str, key)   { 
+
+    console.log(str); console.log(key);
+
+    WIDTH += !key.shift ? TICK_SIZE : SHIFT;
+
+    update_quote();
+
+}
+
+function dec_spread(str, key)   { 
+
+    console.log(str); console.log(key);
+
+    WIDTH -= !key.shift ? TICK_SIZE : SHIFT;
+
+    update_quote();
+
+}
+
+function inc_offset(str, key)   { 
+    
+    console.log(str); console.log(key);
+
+    OFFSET += !key.shift ? TICK_SIZE : SHIFT;
+
+    update_quote();
+
+}
+
+function dec_offset(str, key)   { 
+    
+    console.log(str); console.log(key);
+
+    OFFSET -= !key.shift ? TICK_SIZE : SHIFT;
+
+    update_quote();
+
+}
+
 function toggle_bid(str, key)   { console.log(str); console.log(key); }
 function toggle_ask(str, key)   { console.log(str); console.log(key); }
 function quit(str, key)         { console.log(str); console.log(key); process.exit(); }
@@ -62,7 +109,7 @@ CLIENT.set_ws_handlers(
 
         if (evt.data) {
 
-            let msg = JSON.parse(evt.datqcqa);
+            let msg = JSON.parse(evt.data);
 
             //console.log(msg);
 
@@ -70,7 +117,7 @@ CLIENT.set_ws_handlers(
             if (msg[mdf.ask]) L1_ASK_PX = parseFloat(msg[mdf.ask]);
 
             INSIDE_MKT  = (L1_ASK_PX - L1_BID_PX) / TICK_SIZE;
-            MID_PX      = L1_BID_PX + Math.ceil(ticks / 2) * TICK_SIZE;
+            MID_PX      = L1_BID_PX + Math.ceil(INSIDE_MKT / 2) * TICK_SIZE;
 
             console.log(`${String(L1_BID_PX).padStart(10)}\t${String(MID_PX).padStart(10)}\t${String(L1_ASK_PX).padStart(10)}${String(INSIDE_MKT).padStart(10)}`);
 
