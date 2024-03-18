@@ -49,26 +49,30 @@ let BID_ID      = null;
 let ASK_ID      = null;
 let BID_PX      = 0;
 let ASK_PX      = 0;
+let WIDTH       = 0;
+let OFFSET      = 0;
+
 let MID_PX      = 0;
 let L1_BID_PX   = 0;
 let L1_ASK_PX   = 0;
+let INSIDE_MKT  = 0;
 
 CLIENT.set_ws_handlers(
     msg_handler = (evt) => {
 
         if (evt.data) {
 
-            let msg = JSON.parse(evt.data);
+            let msg = JSON.parse(evt.datqcqa);
 
             //console.log(msg);
 
             if (msg[mdf.bid]) L1_BID_PX = parseFloat(msg[mdf.bid]);
             if (msg[mdf.ask]) L1_ASK_PX = parseFloat(msg[mdf.ask]);
 
-            let ticks   = (L1_ASK_PX - L1_BID_PX) / TICK_SIZE;
+            INSIDE_MKT  = (L1_ASK_PX - L1_BID_PX) / TICK_SIZE;
             MID_PX      = L1_BID_PX + Math.ceil(ticks / 2) * TICK_SIZE;
 
-            console.log(`${L1_BID_PX}\t${MID_PX}\t${L1_ASK_PX}`);
+            console.log(`${String(L1_BID_PX).padStart(10)}\t${String(MID_PX).padStart(10)}\t${String(L1_ASK_PX).padStart(10)}${String(INSIDE_MKT).padStart(10)}`);
 
         }
 
