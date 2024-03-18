@@ -45,6 +45,12 @@ const CONID     = parseInt(process.argv[2]);
 const TICK      = parseFloat(process.argv[3]);
 const SHIFT     = parseInt(process.argv[4]) * TICK;
 
+let BID_ID      = null;
+let ASK_ID      = null;
+let BID_PX      = 0;
+let ASK_PX      = 0;
+let MID_PX      = 0; 
+
 console.log(`CONID: ${CONID}`);
 console.log(`TICK:  ${TICK}`);
 console.log(`SHIFT: ${SHIFT}`);
