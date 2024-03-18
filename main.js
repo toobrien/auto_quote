@@ -132,4 +132,4 @@ console.log(`CONID:      ${CONID}`);
 console.log(`TICK_SIZE:  ${TICK_SIZE}`);
 console.log(`SHIFT:      ${SHIFT}`);
 
-setInterval(() => { return; }, 1000);
+setInterval(() => { update_quote(); }, 1000);
