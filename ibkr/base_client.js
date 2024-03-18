@@ -31,6 +31,7 @@ class base_client {
         this.ws_uri     = `ws://${host}:${port}/v1/api/ws`;
         this.ws         = null;
 
+        /*
         let def_ws_handler = (evt) =>  {
 
             if (evt.data) {
@@ -41,7 +42,9 @@ class base_client {
             
             }
 
-        }
+        }*/
+
+        let def_ws_handler = (evt) => {};
 
         this.ws_cls_handler = def_ws_handler;
         this.ws_opn_handler = def_ws_handler;

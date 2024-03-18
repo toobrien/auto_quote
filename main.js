@@ -11,20 +11,38 @@ const IN_MAP                = {};
 readline.emitKeypressEvents(process.stdin);
 process.stdin.setRawMode(true);
 
+// debug
+
+let LAST_KEY    = null;
+let LAST_STR    = null;
+
+function update_screen() {
+    
+    process.stdout.cursorTo(0, 5);
+
+    process.stdout.clearLine(0);
+    process.stdout.write(`last key: ${LAST_STR}\n`);
+    process.stdout.clearLine(0);
+    process.stdout.write(`last_evt: ${LAST_KEY}\n`);
+    process.stdout.clearLine(0);
+    process.stdout.write(`market: ${String(L1_BID_PX).padStart(10)}${String(MID_PX).padStart(10)}${String(L1_ASK_PX).padStart(10)}${String(INSIDE_MKT).padStart(10)}\n`);
+    process.stdout.clearLine(0);
+    process.stdout.write(`quote:  ${String(BID_PX).padStart(10)}${String(MID_PX + OFFSET).padStart(10)}${String(ASK_PX).padStart(10)}${String((ASK_PX - BID_PX) / TICK_SIZE).padStart(10)}${String(OFFSET).padStart(10)}\n`);
+
+}
+
 
 function update_quote() {
 
     BID_PX = MID_PX - WIDTH + OFFSET;
     ASK_PX = MID_PX + WIDTH + OFFSET;
 
-    console.log(`${String(BID_PX).padStart(10)}${String(ASK_PX).padStart(10)}${String((ASK_PX - BID_PX) / TICK_SIZE).padStart(10)}${String(OFFSET).padStart(10)}`);
+    update_screen();
 
 }
 
 
 function inc_spread(str, key)   { 
-
-    console.log(str); console.log(key);
 
     WIDTH += !key.shift ? TICK_SIZE : SHIFT;
 
@@ -34,8 +52,6 @@ function inc_spread(str, key)   {
 
 function dec_spread(str, key)   { 
 
-    console.log(str); console.log(key);
-
     WIDTH -= !key.shift ? TICK_SIZE : SHIFT;
 
     update_quote();
@@ -43,8 +59,6 @@ function dec_spread(str, key)   {
 }
 
 function inc_offset(str, key)   { 
-    
-    console.log(str); console.log(key);
 
     OFFSET += !key.shift ? TICK_SIZE : SHIFT;
 
@@ -53,8 +67,6 @@ function inc_offset(str, key)   {
 }
 
 function dec_offset(str, key)   { 
-    
-    console.log(str); console.log(key);
 
     OFFSET -= !key.shift ? TICK_SIZE : SHIFT;
 
@@ -62,9 +74,9 @@ function dec_offset(str, key)   {
 
 }
 
-function toggle_bid(str, key)   { console.log(str); console.log(key); }
-function toggle_ask(str, key)   { console.log(str); console.log(key); }
-function quit(str, key)         { console.log(str); console.log(key); process.exit(); }
+function toggle_bid(str, key)   { update_quote(); }
+function toggle_ask(str, key)   { update_quote(); }
+function quit(str, key)         { process.exit(); }
 
 IN_MAP["a"] = inc_spread;
 IN_MAP["z"] = dec_spread;
@@ -79,10 +91,16 @@ process.stdin.on(
     (str, key) => { 
 
         let name = key["name"];
-        
+        LAST_STR = str;
+        LAST_KEY = JSON.stringify(key); 
+                
         if (name in IN_MAP)
             
-            IN_MAP[name](str, key); 
+            IN_MAP[name](str, key);
+
+        else
+
+            update_screen();
         
     }
 );
@@ -119,7 +137,7 @@ CLIENT.set_ws_handlers(
             INSIDE_MKT  = (L1_ASK_PX - L1_BID_PX) / TICK_SIZE;
             MID_PX      = L1_BID_PX + Math.ceil(INSIDE_MKT / 2) * TICK_SIZE;
 
-            console.log(`${String(L1_BID_PX).padStart(10)}\t${String(MID_PX).padStart(10)}\t${String(L1_ASK_PX).padStart(10)}${String(INSIDE_MKT).padStart(10)}`);
+            update_screen();
 
         }
 
@@ -130,6 +148,6 @@ CLIENT.sub_market_data([ CONID ], [ mdf.bid, mdf.ask ]);
 
 console.log(`CONID:      ${CONID}`);
 console.log(`TICK_SIZE:  ${TICK_SIZE}`);
-console.log(`SHIFT:      ${SHIFT}`);
+console.log(`SHIFT:      ${SHIFT}\n`);
 
 setInterval(() => { update_quote(); }, 1000);
