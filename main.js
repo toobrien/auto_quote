@@ -4,12 +4,11 @@ const IN_MAP                = {};
 
 
 // https://ibkrcampus.com/ibkr-api-page/webapi-ref/#place-order
-
 // node main.js 637533450 0.25 4
-
 
 readline.emitKeypressEvents(process.stdin);
 process.stdin.setRawMode(true);
+
 
 // debug
 
@@ -19,9 +18,12 @@ let LAST_STR    = null;
 
 // screen
 
-function update_screen() {
+let STATE_LINE  = 5;
+let ERROR_LINE  = 10;
+
+function update_screen(err_msg = null) {
     
-    process.stdout.cursorTo(0, 5);
+    process.stdout.cursorTo(0, STATE_LINE);
 
     process.stdout.clearLine(0);
     process.stdout.write(`last key: ${LAST_STR}\n`);
@@ -32,7 +34,22 @@ function update_screen() {
     process.stdout.clearLine(0);
     process.stdout.write(`quote:  ${String(BID_PX).padStart(10)}${String(MID_PX + OFFSET).padStart(10)}${String(ASK_PX).padStart(10)}${String((ASK_PX - BID_PX) / TICK_SIZE).padStart(10)}${String(OFFSET).padStart(10)}\n`);
 
+    if (err_msg) {
+
+        for (let i = ERROR_LINE; i < process.stdout.rows; i++) {
+
+            process.stdout.cursorTo(0, i);
+            process.stdout.clearLine(0);
+        
+        }
+
+        process.stdout.cursorTo(0, ERROR_LINE);
+        process.stdout.write(err_msg);
+
+    }
+
 }
+
 
 // quote
 
@@ -44,6 +61,7 @@ function update_quote() {
     update_screen();
 
 }
+
 
 
 // input handlers
@@ -111,6 +129,79 @@ process.stdin.on(
     }
 );
 
+
+// orders
+
+function place_order(side, price) {
+
+    let args = {
+        orders: [
+            {
+                acctId:     ACCOUNT_ID,
+                conid:      CONID,
+                secType:    "FUT",
+                parentId:   null,
+                orderType:  "LMT",
+                outsideRTH: true,
+                price:      price,
+                side:       side,
+                tif:        "GTC",
+                quantity:   1
+            }
+        ]
+    };
+
+    let res = CLIENT.place_order(ACCOUNT_ID, args);
+
+    if (res) {
+
+        let order   = res[0];
+        let err_msg = null;
+
+        if (order.message) {
+
+             err_msg = order.message;
+
+        } else if (side == "BUY") {
+
+            BID_ID      = order.order_id;
+            BID_STATUS  = order.order_status;
+
+        } else {
+
+            ASK_ID      = order.order_id;
+            ASK_STATUS  = order.order_status;
+
+        }
+
+        update_screen(err_msg);
+
+    }
+
+}
+
+function cancel_order(order_id) {
+
+    let res = CLIENT.cancel_order(ACCOUNT_ID, order_id);
+    let msg = null;
+
+    if (res)
+
+        msg = res.msg ? res.msg : res.error ? res.error : `cancel_order(${order_id}) response format not recognized`;
+
+    else
+
+        msg = `cancel_order(${order_id}) failed with ${res.status}`;
+
+    update_screen(msg);
+
+    
+
+}
+
+function modify_order(order_id) {}
+
+
 // init
 
 const ACCOUNT_ID    = process.env.IBKR_ACCOUNT_ID;
@@ -120,7 +211,9 @@ const TICK_SIZE     = parseFloat(process.argv[3]);
 const SHIFT         = parseInt(process.argv[4]) * TICK_SIZE;
 
 let BID_ID          = null;
+let BID_STATUS      = null;
 let ASK_ID          = null;
+let ASK_STATUS      = null;
 let BID_PX          = 0;
 let ASK_PX          = 0;
 let WIDTH           = 0;
@@ -137,8 +230,6 @@ CLIENT.set_ws_handlers(
         if (evt.data) {
 
             let msg = JSON.parse(evt.data);
-
-            //console.log(msg);
 
             if (msg[mdf.bid]) L1_BID_PX = parseFloat(msg[mdf.bid]);
             if (msg[mdf.ask]) L1_ASK_PX = parseFloat(msg[mdf.ask]);

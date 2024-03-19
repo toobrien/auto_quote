@@ -243,6 +243,58 @@ class base_client {
 
     }
 
+    async place_order(account_id, args) {
+
+        let res = await fetch(
+            `${this.rest_uri}/iserver/account/${account_id}/orders`,
+            {
+                method:     "POST",
+                body:       JSON.stringify(args),
+                headers:    { "Content-Type": "application/json" }
+            }
+        );
+
+        res = res.status == 200 ? await res.json() : null;
+
+        return res;
+
+    }
+
+    async modidfy_order(account_id, args) {
+
+        // ...
+
+    }
+
+
+    async cancel_order(account_id, order_id) {
+
+        let res = await fetch(
+            `${this.rest_uri}/iserver/account/${account_id}/order/${order_id}`
+        );
+
+        res = res.status == 200 ? await res.json() : null;
+
+        return res;
+
+    }
+    
+    async sub_order_updates() {
+
+        if (!this.ws) await this.init_ws();
+        if (!this.ws) return;
+
+        this.ws.send("sor+{}");
+
+    }
+    
+    async unsub_order_updates() {
+
+        if (!this.ws) return;
+
+        this.ws.send("uor+{}");
+
+    }
 
 }
 
