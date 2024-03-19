@@ -16,6 +16,9 @@ process.stdin.setRawMode(true);
 let LAST_KEY    = null;
 let LAST_STR    = null;
 
+
+// screen
+
 function update_screen() {
     
     process.stdout.cursorTo(0, 5);
@@ -31,6 +34,7 @@ function update_screen() {
 
 }
 
+// quote
 
 function update_quote() {
 
@@ -41,6 +45,8 @@ function update_quote() {
 
 }
 
+
+// input handlers
 
 function inc_spread(str, key)   { 
 
@@ -105,22 +111,25 @@ process.stdin.on(
     }
 );
 
-const CLIENT    = new base_client();
-const CONID     = parseInt(process.argv[2]);
-const TICK_SIZE = parseFloat(process.argv[3]);
-const SHIFT     = parseInt(process.argv[4]) * TICK_SIZE;
+// init
 
-let BID_ID      = null;
-let ASK_ID      = null;
-let BID_PX      = 0;
-let ASK_PX      = 0;
-let WIDTH       = 0;
-let OFFSET      = 0;
+const ACCOUNT_ID    = process.env.IBKR_ACCOUNT_ID;
+const CLIENT        = new base_client();
+const CONID         = parseInt(process.argv[2]);
+const TICK_SIZE     = parseFloat(process.argv[3]);
+const SHIFT         = parseInt(process.argv[4]) * TICK_SIZE;
 
-let MID_PX      = 0;
-let L1_BID_PX   = 0;
-let L1_ASK_PX   = 0;
-let INSIDE_MKT  = 0;
+let BID_ID          = null;
+let ASK_ID          = null;
+let BID_PX          = 0;
+let ASK_PX          = 0;
+let WIDTH           = 0;
+let OFFSET          = 0;
+
+let MID_PX          = 0;
+let L1_BID_PX       = 0;
+let L1_ASK_PX       = 0;
+let INSIDE_MKT      = 0;
 
 CLIENT.set_ws_handlers(
     msg_handler = (evt) => {
