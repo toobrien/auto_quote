@@ -6,6 +6,7 @@ const IN_MAP                = {};
 // https://ibkrcampus.com/ibkr-api-page/webapi-ref/#place-order
 // node main.js 637533450 0.25 4
 
+
 readline.emitKeypressEvents(process.stdin);
 process.stdin.setRawMode(true);
 
@@ -19,9 +20,9 @@ let LAST_STR    = null;
 // screen
 
 let STATE_LINE  = 5;
-let ERROR_LINE  = 10;
+let MSG_LINE    = 10;
 
-function update_screen(err_msg = null) {
+function update_screen(msg = null) {
     
     process.stdout.cursorTo(0, STATE_LINE);
 
@@ -34,17 +35,17 @@ function update_screen(err_msg = null) {
     process.stdout.clearLine(0);
     process.stdout.write(`quote:  ${String(BID_PX).padStart(10)}${String(MID_PX + OFFSET).padStart(10)}${String(ASK_PX).padStart(10)}${String((ASK_PX - BID_PX) / TICK_SIZE).padStart(10)}${String(OFFSET).padStart(10)}\n`);
 
-    if (err_msg) {
+    if (msg) {
 
-        for (let i = ERROR_LINE; i < process.stdout.rows; i++) {
+        for (let i = MSG_LINE; i < process.stdout.rows; i++) {
 
             process.stdout.cursorTo(0, i);
             process.stdout.clearLine(0);
         
         }
 
-        process.stdout.cursorTo(0, ERROR_LINE);
-        process.stdout.write(err_msg);
+        process.stdout.cursorTo(0, MSG_LINE);
+        process.stdout.write(msg);
 
     }
 
@@ -58,10 +59,12 @@ function update_quote() {
     BID_PX = MID_PX - WIDTH + OFFSET;
     ASK_PX = MID_PX + WIDTH + OFFSET;
 
+    if (BID_STATUS == "Active") modify_order("BUY", BID_PX);
+    if (ASK_STATUS == "Active") modify_order("SELL", ASK_PX); 
+
     update_screen();
 
 }
-
 
 
 // input handlers
@@ -98,9 +101,42 @@ function dec_offset(str, key)   {
 
 }
 
-function toggle_bid(str, key)   { update_quote(); }
-function toggle_ask(str, key)   { update_quote(); }
-function quit(str, key)         { process.exit(); }
+function toggle_bid(str, key)   { 
+
+    if (!BID_STATUS) {
+        
+        place_order("BUY", BID_PX);
+
+    } else {
+
+        cancel_order(BID_ARGS.order_id);
+
+    }
+
+}
+
+function toggle_ask(str, key)   { 
+
+    if (!ASK_STATUS) {
+        
+        place_order("SELL", ASK_PX);
+
+    } else {
+
+        cancel_order(ASK_ARGS.order_id);
+
+    }
+
+}
+
+function quit(str, key) { 
+
+    if (BID_STATUS) cancel_order(BID_ARGS.order_id);
+    if (ASK_STATUS) cancel_order(ASK_ARGS.order_id);
+
+    process.exit(); 
+
+}
 
 IN_MAP["a"] = inc_spread;
 IN_MAP["z"] = dec_spread;
@@ -156,25 +192,25 @@ function place_order(side, price) {
     if (res) {
 
         let order   = res[0];
-        let err_msg = null;
+        let msg     = null;
 
         if (order.message) {
 
-             err_msg = order.message;
+             msg = order.message;
 
         } else if (side == "BUY") {
 
-            BID_ID      = order.order_id;
-            BID_STATUS  = order.order_status;
+            BID_ARGS.order_id   = order.order_id;
+            BID_STATUS          = order.order_status;
 
         } else {
 
-            ASK_ID      = order.order_id;
-            ASK_STATUS  = order.order_status;
+            ASK_ARGS.order_id   = order.order_id;
+            ASK_STATUS          = order.order_status;
 
         }
 
-        update_screen(err_msg);
+        update_screen(msg);
 
     }
 
@@ -199,8 +235,47 @@ function cancel_order(order_id) {
 
 }
 
-function modify_order(order_id) {}
+function modify_order(side, price) {
 
+    let args    = side == "buy" ? BID_ARGS : ASK_ARGS;
+    
+    args.price  = price;
+    
+    let res     = CLIENT.modify_order(ACCOUNT_ID, order_id, args);
+    let msg     = null;
+
+    if (res)
+
+        msg = res.msg ? res.msg : res.error ? res.error : `modify_order(${order_id} response format not recognized)`;
+
+    else
+
+        msg = `modify_order(${order_id}) failed with ${res.status}`;
+    
+    update_screen(msg);
+
+}
+
+
+// websocket handler
+
+function ws_handler(evt) {
+
+    if (evt.data) {
+
+        let msg = JSON.parse(evt.data);
+
+        if (msg[mdf.bid]) L1_BID_PX = parseFloat(msg[mdf.bid]);
+        if (msg[mdf.ask]) L1_ASK_PX = parseFloat(msg[mdf.ask]);
+
+        INSIDE_MKT  = (L1_ASK_PX - L1_BID_PX) / TICK_SIZE;
+        MID_PX      = L1_BID_PX + Math.ceil(INSIDE_MKT / 2) * TICK_SIZE;
+
+        update_screen();
+
+    }
+
+}
 
 // init
 
@@ -210,10 +285,34 @@ const CONID         = parseInt(process.argv[2]);
 const TICK_SIZE     = parseFloat(process.argv[3]);
 const SHIFT         = parseInt(process.argv[4]) * TICK_SIZE;
 
-let BID_ID          = null;
 let BID_STATUS      = null;
-let ASK_ID          = null;
 let ASK_STATUS      = null;
+
+let BID_ARGS        = {
+                        acctId:     ACCOUNT_ID,
+                        conid:      CONID,
+                        secType:    "FUT",
+                        parentId:   null,
+                        orderType:  "LMT",
+                        outsideRTH: true,
+                        price:      price,
+                        side:       side,
+                        tif:        "GTC",
+                        quantity:   1
+                    };
+let ASK_ARGS        = {
+                        acctId:     ACCOUNT_ID,
+                        conid:      CONID,
+                        secType:    "FUT",
+                        parentId:   null,
+                        orderType:  "LMT",
+                        outsideRTH: true,
+                        price:      price,
+                        side:       side,
+                        tif:        "GTC",
+                        quantity:   1
+                }
+
 let BID_PX          = 0;
 let ASK_PX          = 0;
 let WIDTH           = 0;
@@ -224,27 +323,9 @@ let L1_BID_PX       = 0;
 let L1_ASK_PX       = 0;
 let INSIDE_MKT      = 0;
 
-CLIENT.set_ws_handlers(
-    msg_handler = (evt) => {
-
-        if (evt.data) {
-
-            let msg = JSON.parse(evt.data);
-
-            if (msg[mdf.bid]) L1_BID_PX = parseFloat(msg[mdf.bid]);
-            if (msg[mdf.ask]) L1_ASK_PX = parseFloat(msg[mdf.ask]);
-
-            INSIDE_MKT  = (L1_ASK_PX - L1_BID_PX) / TICK_SIZE;
-            MID_PX      = L1_BID_PX + Math.ceil(INSIDE_MKT / 2) * TICK_SIZE;
-
-            update_screen();
-
-        }
-
-    }
-);
-
+CLIENT.set_ws_handlers(msg_handler = ws_handler);
 CLIENT.sub_market_data([ CONID ], [ mdf.bid, mdf.ask ]);
+CLIENT.sub_order_updates();
 
 console.log(`CONID:      ${CONID}`);
 console.log(`TICK_SIZE:  ${TICK_SIZE}`);

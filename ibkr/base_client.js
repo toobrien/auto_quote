@@ -260,9 +260,20 @@ class base_client {
 
     }
 
-    async modidfy_order(account_id, args) {
+    async modidfy_order(account_id, order_id, args) {
 
-        // ...
+        let res = await fetch(
+            `${this.res_uri}/iserver/account/${account_id}/order/${order_id}`,
+            {
+                method:     "POST",
+                body:       JSON.stringify(args),
+                headers:    { "Content-Type": "application/json" }
+            }
+        )
+
+        res = res.status == 200 ? await res.json() : null;
+
+        return res;
 
     }
 
