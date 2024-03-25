@@ -3,7 +3,6 @@ const readline              = require("readline");
 const IN_MAP                = {};
 
 
-// https://ibkrcampus.com/ibkr-api-page/webapi-ref/#place-order
 // node main.js 637533450 0.25 4
 
 
@@ -28,8 +27,8 @@ function update_screen(msg = null) {
 
     let lines = [
         `heartbeat: ${HEARTBEAT}`,
-        `bid status: ${BID_ARGS.order_id.padStart(10)}${BID_STATUS.padStart(10)}\n`,
-        `ask status: ${ASK_ARGS.order_id.padStart(10)}${ASK_STATUS.padStart(10)}\n`,
+        `bid status: ${String(BID_ARGS.order_id).padStart(10)}${String(BID_STATUS).padStart(10)}\n`,
+        `ask status: ${String(ASK_ARGS.order_id).padStart(10)}${String(ASK_STATUS).padStart(10)}\n`,
         `last key: ${LAST_STR}\n`,
         `last_evt: ${LAST_KEY}\n`,
         `market: ${String(L1_BID_PX).padStart(10)}${String(MID_PX).padStart(10)}${String(L1_ASK_PX).padStart(10)}${String(INSIDE_MKT).padStart(10)}\n`,
