@@ -178,7 +178,7 @@ async function place_order(side, price) {
             {
                 acctId:     ACCOUNT_ID,
                 conid:      CONID,
-                secType:    "FUT",
+                secType:    `${CONID}@FUT`,
                 parentId:   null,
                 orderType:  "LMT",
                 outsideRTH: true,
@@ -424,7 +424,7 @@ console.log(`CONID:      ${String(CONID).padStart(10)}`);
 console.log(`TICK_SIZE:  ${String(TICK_SIZE).padStart(10)}`);
 console.log(`SHIFT:      ${String(SHIFT).padStart(10)}\n`);
 
-/*
+
 setInterval(
     () => { 
 
@@ -434,4 +434,3 @@ setInterval(
     },
     1000
 );
-*/
