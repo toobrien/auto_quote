@@ -26,11 +26,11 @@ function update_screen(msg = null) {
     process.stdout.cursorTo(0, STATE_LINE);
 
     let lines = [
-        `heartbeat:  ${HEARTBEAT}\n`,
+        `heartbeat:  ${String(HEARTBEAT).padStart(10)}\n`,
         `bid status: ${String(BID_ARGS.order_id).padStart(10)}${String(BID_STATUS).padStart(10)}\n`,
         `ask status: ${String(ASK_ARGS.order_id).padStart(10)}${String(ASK_STATUS).padStart(10)}\n`,
-        `last key:   ${LAST_STR}\n`,
-        `last_evt:   ${LAST_KEY}\n`,
+        //`last key:   ${String(LAST_STR).padStart(10)}\n`,
+        //`last_evt:   ${String(LAST_KEY).padStart(10)}\n`,
         `market:     ${String(L1_BID_PX).padStart(10)}${String(MID_PX).padStart(10)}${String(L1_ASK_PX).padStart(10)}${String(INSIDE_MKT).padStart(10)}\n`,
         `quote:      ${String(BID_PX).padStart(10)}${String(MID_PX + OFFSET).padStart(10)}${String(ASK_PX).padStart(10)}${String((ASK_PX - BID_PX) / TICK_SIZE).padStart(10)}${String(OFFSET).padStart(10)}`,
     ]
