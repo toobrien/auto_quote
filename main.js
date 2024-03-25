@@ -198,7 +198,7 @@ async function place_order(side, price) {
 
         if (res.error) {
 
-             msg = res.message;
+             msg = res.error;
 
         } else if (side == "BUY") {
 
