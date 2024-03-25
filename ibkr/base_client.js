@@ -42,7 +42,8 @@ class base_client {
             
             }
 
-        }*/
+        }
+        */
 
         let def_ws_handler = (evt) => {};
 

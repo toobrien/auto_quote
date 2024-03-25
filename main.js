@@ -19,7 +19,7 @@ let LAST_STR    = null;
 // screen
 
 let STATE_LINE  = 5;
-let MSG_LINE    = 12;
+let MSG_LINE    = 13;
 let TITLE_LINE  = `${"".padStart(10)}${"bid".padStart(10)}${"mid".padStart(10)}${"ask".padStart(10)}${"width".padStart(10)}${"offset".padStart(10)}\n`
 
 function update_screen(msg = null) {
@@ -382,7 +382,7 @@ let ASK_STATUS      = null;
 let BID_ARGS        = {
                         acctId:     ACCOUNT_ID,
                         conid:      CONID,
-                        secType:    "FUT",
+                        secType:    `${CONID}@FUT`,
                         parentId:   null,
                         orderType:  "LMT",
                         outsideRTH: true,
@@ -394,7 +394,7 @@ let BID_ARGS        = {
 let ASK_ARGS        = {
                         acctId:     ACCOUNT_ID,
                         conid:      CONID,
-                        secType:    "FUT",
+                        secType:    `${CONID}@FUT`,
                         parentId:   null,
                         orderType:  "LMT",
                         outsideRTH: true,
@@ -424,6 +424,7 @@ console.log(`CONID:      ${String(CONID).padStart(10)}`);
 console.log(`TICK_SIZE:  ${String(TICK_SIZE).padStart(10)}`);
 console.log(`SHIFT:      ${String(SHIFT).padStart(10)}\n`);
 
+/*
 setInterval(
     () => { 
 
@@ -433,3 +434,4 @@ setInterval(
     },
     1000
 );
+*/
