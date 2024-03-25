@@ -191,22 +191,21 @@ async function place_order(side, price) {
 
     if (res) {
 
-        let order   = res[0];
         let msg     = null;
 
-        if (order.message) {
+        if (res.error) {
 
              msg = order.message;
 
         } else if (side == "BUY") {
 
-            BID_ARGS.order_id   = order.order_id;
-            BID_STATUS          = order.order_status;
+            BID_ARGS.order_id   = res.order_id;
+            BID_STATUS          = res.order_status;
 
         } else {
 
-            ASK_ARGS.order_id   = order.order_id;
-            ASK_STATUS          = order.order_status;
+            ASK_ARGS.order_id   = res.order_id;
+            ASK_STATUS          = res.order_status;
 
         }
 
@@ -233,8 +232,6 @@ async function cancel_order(order_id) {
 
     update_screen(msg);
 
-    
-
 }
 
 async function modify_order(order_id, side, price) {
@@ -248,7 +245,7 @@ async function modify_order(order_id, side, price) {
 
     if (res)
 
-        msg = res.msg ? res.msg : res.error ? res.error : `modify_order(${order_id} response format not recognized)`;
+        msg = res.order_status ? res.order_status : res.error ? res.error : `modify_order(${order_id} response format not recognized)`;
 
     else
 
