@@ -246,13 +246,11 @@ class base_client {
 
     async place_order(account_id, args) {
 
-        let body = JSON.stringify(args);
-
         let res = await fetch(
             `${this.rest_uri}/iserver/account/${account_id}/orders`,
             {
                 method:     "POST",
-                body:       body,
+                body:       JSON.stringify(args),
                 headers:    { "Content-Type": "application/json" }
             }
         );
