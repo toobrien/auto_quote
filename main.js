@@ -19,7 +19,7 @@ let LAST_STR    = null;
 // screen
 
 let STATE_LINE  = 5;
-let MSG_LINE    = 15;
+let MSG_LINE    = 12;
 let TITLE_LINE  = `${"".padStart(10)}${"bid".padStart(10)}${"mid".padStart(10)}${"ask".padStart(10)}${"width".padStart(10)}${"offset".padStart(10)}\n`
 
 function update_screen(msg = null) {
