@@ -35,7 +35,7 @@ function update_screen(msg = null) {
         //`last_evt:   ${String(LAST_KEY).padStart(10)}\n`,
         TITLE_LINE,
         `market:     ${String(L1_BID_PX).padStart(10)}${String(MID_PX).padStart(10)}${String(L1_ASK_PX).padStart(10)}${String(INSIDE_MKT).padStart(10)}\n`,
-        `quote:      ${String(BID_PX).padStart(10)}${String(MID_PX + OFFSET).padStart(10)}${String(ASK_PX).padStart(10)}${String((ASK_PX - BID_PX) / TICK_SIZE).padStart(10)}${String(OFFSET).padStart(10)}`,
+        `quote:      ${String(BID_PX).padStart(10)}${String(MID_PX + OFFSET).padStart(10)}${String(ASK_PX).padStart(10)}${String((ASK_PX - BID_PX) / TICK_SIZE).padStart(10)}${String(OFFSET / TICK_SIZE).padStart(10)}`,
     ]
 
     for (let line of lines) {
@@ -420,9 +420,9 @@ CLIENT.set_ws_handlers(msg_handler = ws_handler);
 CLIENT.sub_market_data([ CONID ], [ mdf.bid, mdf.ask ]);
 CLIENT.sub_order_updates();
 
-console.log(`CONID:      ${CONID}`);
-console.log(`TICK_SIZE:  ${TICK_SIZE}`);
-console.log(`SHIFT:      ${SHIFT}\n`);
+console.log(`CONID:      ${String(CONID).padStart(10)}`);
+console.log(`TICK_SIZE:  ${String(TICK_SIZE).padStart(10)}`);
+console.log(`SHIFT:      ${String(SHIFT).padStart(10)}\n`);
 
 setInterval(
     () => { 
