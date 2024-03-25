@@ -260,7 +260,7 @@ class base_client {
 
     }
 
-    async modidfy_order(account_id, order_id, args) {
+    async modify_order(account_id, order_id, args) {
 
         let res = await fetch(
             `${this.res_uri}/iserver/account/${account_id}/order/${order_id}`,
