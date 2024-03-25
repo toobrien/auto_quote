@@ -20,6 +20,7 @@ let LAST_STR    = null;
 
 let STATE_LINE  = 5;
 let MSG_LINE    = 15;
+let TITLE_LINE  = `${"".padStart(10)}${"bid".padStart(10)}${"mid".padStart(10)}${"ask".padStart(10)}${"width".padStart(10)}${"offset".padStart(10)}\n`
 
 function update_screen(msg = null) {
     
@@ -29,10 +30,12 @@ function update_screen(msg = null) {
         `heartbeat:  ${String(HEARTBEAT).padStart(10)}\n`,
         `bid status: ${String(BID_ARGS.order_id).padStart(10)}${String(BID_STATUS).padStart(10)}\n`,
         `ask status: ${String(ASK_ARGS.order_id).padStart(10)}${String(ASK_STATUS).padStart(10)}\n`,
+        "\n",
         //`last key:   ${String(LAST_STR).padStart(10)}\n`,
         //`last_evt:   ${String(LAST_KEY).padStart(10)}\n`,
+        TITLE_LINE,
         `market:     ${String(L1_BID_PX).padStart(10)}${String(MID_PX).padStart(10)}${String(L1_ASK_PX).padStart(10)}${String(INSIDE_MKT).padStart(10)}\n`,
-        `quote:      ${String(BID_PX).padStart(10)}${String(MID_PX + OFFSET).padStart(10)}${String(ASK_PX).padStart(10)}${String((ASK_PX - BID_PX) / TICK_SIZE).padStart(10)}${String(OFFSET).padStart(10)}`,
+        `quote:      ${String(BID_PX).padStart(10)}${String(MID_PX + OFFSET).padStart(10)}${String(ASK_PX).padStart(10)}${String((ASK_PX - BID_PX)).padStart(10)}${String(OFFSET).padStart(10)}`,
     ]
 
     for (let line of lines) {
@@ -195,7 +198,7 @@ async function place_order(side, price) {
 
         if (res.error) {
 
-             msg = order.message;
+             msg = res.message;
 
         } else if (side == "BUY") {
 
