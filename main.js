@@ -20,13 +20,14 @@ let LAST_STR    = null;
 // screen
 
 let STATE_LINE  = 5;
-let MSG_LINE    = 10;
+let MSG_LINE    = 15;
 
 function update_screen(msg = null) {
     
     process.stdout.cursorTo(0, STATE_LINE);
 
     let lines = [
+        `heartbeat: ${HEARTBEAT}`,
         `bid status: ${BID_ARGS.order_id.padStart(10)}${BID_STATUS.padStart(10)}\n`,
         `ask status: ${ASK_ARGS.order_id.padStart(10)}${ASK_STATUS.padStart(10)}\n`,
         `last key: ${LAST_STR}\n`,
@@ -271,7 +272,19 @@ function handle_market_data_msg(msg) {
 
 }
 
-function handle_system_msg(msg) {}
+function handle_system_msg(msg) {
+
+    let hb = msg.hb
+
+    if (hb) {
+
+        HEARTBEAT = hb;
+
+        update_screen()
+
+    }
+
+}
 
 function handle_order_msg(msg) {
 
@@ -401,6 +414,8 @@ let MID_PX          = 0;
 let L1_BID_PX       = 0;
 let L1_ASK_PX       = 0;
 let INSIDE_MKT      = 0;
+
+let HEARTBEAT       = null;
 
 CLIENT.set_ws_handlers(msg_handler = ws_handler);
 CLIENT.sub_market_data([ CONID ], [ mdf.bid, mdf.ask ]);
