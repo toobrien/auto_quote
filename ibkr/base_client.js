@@ -299,7 +299,7 @@ class base_client {
 
     }
     
-    async unsub_order_updates() {
+    unsub_order_updates() {
 
         if (!this.ws) return;
 

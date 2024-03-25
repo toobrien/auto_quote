@@ -161,7 +161,7 @@ process.stdin.on(
 
 // orders
 
-function place_order(side, price) {
+async function place_order(side, price) {
 
     if (
         (side == "BUY"  && BID_STATUS) ||
@@ -187,7 +187,7 @@ function place_order(side, price) {
         ]
     };
 
-    let res = CLIENT.place_order(ACCOUNT_ID, args);
+    let res = await CLIENT.place_order(ACCOUNT_ID, args);
 
     if (res) {
 
@@ -216,11 +216,11 @@ function place_order(side, price) {
 
 }
 
-function cancel_order(order_id) {
+async function cancel_order(order_id) {
 
     if (!order_id) return;
 
-    let res = CLIENT.cancel_order(ACCOUNT_ID, order_id);
+    let res = await CLIENT.cancel_order(ACCOUNT_ID, order_id);
     let msg = null;
 
     if (res)
@@ -237,13 +237,13 @@ function cancel_order(order_id) {
 
 }
 
-function modify_order(order_id, side, price) {
+async function modify_order(order_id, side, price) {
 
     if (!order_id) return;
 
     let args    = side == "buy" ? BID_ARGS : ASK_ARGS;
     args.price  = price;
-    let res     = CLIENT.modify_order(ACCOUNT_ID, order_id, args);
+    let res     = await CLIENT.modify_order(ACCOUNT_ID, order_id, args);
     let msg     = null;
 
     if (res)
@@ -277,7 +277,7 @@ function handle_system_msg(msg) {
 
     if (hb) {
 
-        HEARTBEAT = hb;
+        HEARTBEAT = 0;
 
         update_screen()
 
@@ -414,14 +414,22 @@ let L1_BID_PX       = 0;
 let L1_ASK_PX       = 0;
 let INSIDE_MKT      = 0;
 
-let HEARTBEAT       = null;
+let HEARTBEAT       = 0;
 
-CLIENT.set_ws_handlers(msg_handler = ws_handler);
-CLIENT.sub_market_data([ CONID ], [ mdf.bid, mdf.ask ]);
-CLIENT.sub_order_updates();
+await CLIENT.set_ws_handlers(msg_handler = ws_handler);
+await CLIENT.sub_market_data([ CONID ], [ mdf.bid, mdf.ask ]);
+await CLIENT.sub_order_updates();
 
 console.log(`CONID:      ${CONID}`);
 console.log(`TICK_SIZE:  ${TICK_SIZE}`);
 console.log(`SHIFT:      ${SHIFT}\n`);
 
-//setInterval(() => { update_quote(); }, 1000);
+setInterval(
+    () => { 
+
+        HEARTBEAT += 1;
+        update_quote();
+
+    },
+    1000
+);
