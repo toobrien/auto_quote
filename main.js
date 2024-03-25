@@ -416,9 +416,9 @@ let INSIDE_MKT      = 0;
 
 let HEARTBEAT       = 0;
 
-await CLIENT.set_ws_handlers(msg_handler = ws_handler);
-await CLIENT.sub_market_data([ CONID ], [ mdf.bid, mdf.ask ]);
-await CLIENT.sub_order_updates();
+CLIENT.set_ws_handlers(msg_handler = ws_handler);
+CLIENT.sub_market_data([ CONID ], [ mdf.bid, mdf.ask ]);
+CLIENT.sub_order_updates();
 
 console.log(`CONID:      ${CONID}`);
 console.log(`TICK_SIZE:  ${TICK_SIZE}`);
