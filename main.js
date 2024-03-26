@@ -178,8 +178,6 @@ async function place_order(side, price) {
             {
                 acctId:     ACCOUNT_ID,
                 conid:      CONID,
-                secType:    `${CONID}@FUT`,
-                parentId:   null,
                 orderType:  "LMT",
                 outsideRTH: true,
                 price:      price,
@@ -382,8 +380,6 @@ let ASK_STATUS      = null;
 let BID_ARGS        = {
                         acctId:     ACCOUNT_ID,
                         conid:      CONID,
-                        secType:    `${CONID}@FUT`,
-                        parentId:   null,
                         orderType:  "LMT",
                         outsideRTH: true,
                         price:      null,
@@ -394,8 +390,6 @@ let BID_ARGS        = {
 let ASK_ARGS        = {
                         acctId:     ACCOUNT_ID,
                         conid:      CONID,
-                        secType:    `${CONID}@FUT`,
-                        parentId:   null,
                         orderType:  "LMT",
                         outsideRTH: true,
                         price:      null,
