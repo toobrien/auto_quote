@@ -18,24 +18,25 @@ let LAST_STR    = null;
 
 // screen
 
+let COL_WIDTH   = 15
 let STATE_LINE  = 5;
 let MSG_LINE    = 13;
-let TITLE_LINE  = `${"".padStart(10)}${"bid".padStart(10)}${"mid".padStart(10)}${"ask".padStart(10)}${"width".padStart(10)}${"offset".padStart(10)}\n`
+let TITLE_LINE  = `${"".padStart(COL_WIDTH)}${"bid".padStart(COL_WIDTH)}${"mid".padStart(COL_WIDTH)}${"ask".padStart(COL_WIDTH)}${"width".padStart(COL_WIDTH)}${"offset".padStart(COL_WIDTH)}\n`
 
 function update_screen(msg = null) {
     
     process.stdout.cursorTo(0, STATE_LINE);
 
     let lines = [
-        `heartbeat:  ${String(HEARTBEAT).padStart(10)}\n`,
-        `bid status: ${String(BID_ARGS.order_id).padStart(10)}${String(BID_STATUS).padStart(10)}\n`,
-        `ask status: ${String(ASK_ARGS.order_id).padStart(10)}${String(ASK_STATUS).padStart(10)}\n`,
+        `heartbeat:  ${String(HEARTBEAT).padStart(COL_WIDTH)}\n`,
+        `bid status: ${String(BID_ARGS.order_id).padStart(COL_WIDTH)}${String(BID_STATUS).padStart(COL_WIDTH)}\n`,
+        `ask status: ${String(ASK_ARGS.order_id).padStart(COL_WIDTH)}${String(ASK_STATUS).padStart(COL_WIDTH)}\n`,
         "\n",
-        //`last key:   ${String(LAST_STR).padStart(10)}\n`,
-        //`last_evt:   ${String(LAST_KEY).padStart(10)}\n`,
+        //`last key:   ${String(LAST_STR).padStart(COL_WIDTH)}\n`,
+        //`last_evt:   ${String(LAST_KEY).padStart(COL_WIDTH)}\n`,
         TITLE_LINE,
-        `market:     ${String(L1_BID_PX).padStart(10)}${String(MID_PX).padStart(10)}${String(L1_ASK_PX).padStart(10)}${String(INSIDE_MKT).padStart(10)}\n`,
-        `quote:      ${String(BID_PX).padStart(10)}${String(MID_PX + OFFSET).padStart(10)}${String(ASK_PX).padStart(10)}${String((ASK_PX - BID_PX) / TICK_SIZE).padStart(10)}${String(OFFSET / TICK_SIZE).padStart(10)}`,
+        `market:     ${String(L1_BID_PX).padStart(COL_WIDTH)}${String(MID_PX).padStart(COL_WIDTH)}${String(L1_ASK_PX).padStart(COL_WIDTH)}${String(INSIDE_MKT).padStart(COL_WIDTH)}\n`,
+        `quote:      ${String(BID_PX).padStart(COL_WIDTH)}${String(MID_PX + OFFSET).padStart(COL_WIDTH)}${String(ASK_PX).padStart(COL_WIDTH)}${String((ASK_PX - BID_PX) / TICK_SIZE).padStart(COL_WIDTH)}${String(OFFSET / TICK_SIZE).padStart(COL_WIDTH)}`,
     ]
 
     for (let line of lines) {
@@ -246,7 +247,7 @@ async function cancel_order(order_id) {
 
     else
 
-        msg = `cancel_order(${order_id}) failed with ${res.status}`;
+        msg = `cancel_order(${order_id}) failed`;
 
     update_screen(msg);
 
@@ -267,7 +268,7 @@ async function modify_order(order_id, side, price) {
 
     else
 
-        msg = `modify_order(${order_id}) failed with ${res.status}`;
+        msg = `modify_order(${order_id}) failed`;
     
     update_screen(msg);
 
@@ -429,9 +430,9 @@ CLIENT.set_ws_handlers(msg_handler = ws_handler);
 CLIENT.sub_market_data([ CONID ], [ mdf.bid, mdf.ask ]);
 CLIENT.sub_order_updates();
 
-console.log(`CONID:      ${String(CONID).padStart(10)}`);
-console.log(`TICK_SIZE:  ${String(TICK_SIZE).padStart(10)}`);
-console.log(`SHIFT:      ${String(SHIFT).padStart(10)}\n`);
+console.log(`CONID:      ${String(CONID).padStart(COL_WIDTH)}`);
+console.log(`TICK_SIZE:  ${String(TICK_SIZE).padStart(COL_WIDTH)}`);
+console.log(`SHIFT:      ${String(SHIFT).padStart(COL_WIDTH)}\n`);
 
 
 setInterval(
