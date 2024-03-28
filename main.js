@@ -179,7 +179,6 @@ async function place_order(side, price) {
                 acctId:     ACCOUNT_ID,
                 conid:      CONID,
                 orderType:  "LMT",
-                outsideRTH: true,
                 price:      price,
                 side:       side,
                 tif:        "GTC",
@@ -188,29 +187,47 @@ async function place_order(side, price) {
         ]
     };
 
-    let res = await CLIENT.place_order(ACCOUNT_ID, args);
+    let err     = null;
+    let order   = null;
+    let res     = await CLIENT.place_order(ACCOUNT_ID, args);
 
-    if (res) {
-
-        let msg     = null;
-
+    while (res) {
+    
         if (res.error) {
 
-             msg = res.error;
-
-        } else if (side == "BUY") {
-
-            BID_ARGS.order_id   = res.order_id;
-            BID_STATUS          = res.order_status;
-
-        } else {
-
-            ASK_ARGS.order_id   = res.order_id;
-            ASK_STATUS          = res.order_status;
+            err = res.error;
+            
+            break;
 
         }
 
-        update_screen(msg);
+        res = await CLIENT.reply(res[0].id);
+
+        if (res && res[0].order_status) {
+
+            order = res[0];
+
+            break;
+
+        }
+
+    }
+
+    if (order) {
+
+        if (side == "BUY") {
+
+            BID_ARGS.order_id   = res[0].order_id;
+            BID_STATUS          = res[0].order_status;
+
+        } else {
+
+            ASK_ARGS.order_id   = res[0].order_id;
+            ASK_STATUS          = res[0].order_status;
+
+        }
+
+        update_screen(err);
 
     }
 
@@ -381,7 +398,6 @@ let BID_ARGS        = {
                         acctId:     ACCOUNT_ID,
                         conid:      CONID,
                         orderType:  "LMT",
-                        outsideRTH: true,
                         price:      null,
                         side:       "BUY",
                         tif:        "GTC",
@@ -391,7 +407,6 @@ let ASK_ARGS        = {
                         acctId:     ACCOUNT_ID,
                         conid:      CONID,
                         orderType:  "LMT",
-                        outsideRTH: true,
                         price:      null,
                         side:       "SELL",
                         tif:        "GTC",

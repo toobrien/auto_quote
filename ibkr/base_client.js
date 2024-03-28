@@ -261,6 +261,22 @@ class base_client {
 
     }
 
+    async reply(reply_id) {
+
+        let res = await fetch(
+            `${this.rest_uri}/iserver/reply/${reply_id}`,
+            {
+                method:     "POST",
+                body:       JSON.stringify({ "confirmed": true })
+            }
+        );
+
+        res = res.status == 200 ? await res.json() : null;
+
+        return res;
+
+    }
+
     async modify_order(account_id, order_id, args) {
 
         let res = await fetch(
