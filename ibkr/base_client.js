@@ -255,7 +255,7 @@ class base_client {
             }
         );
 
-        res = res.status == 200 ? await res.json() : null;
+        res = res.status == 200 ? await res.json() : { "error": res.statusText };
 
         return res;
 
@@ -271,7 +271,7 @@ class base_client {
             }
         );
 
-        res = res.status == 200 ? await res.json() : null;
+        res = res.status == 200 ? await res.json() : { "error": res.statusText };
 
         return res;
 
@@ -288,7 +288,7 @@ class base_client {
             }
         )
 
-        res = res.status == 200 ? await res.json() : null;
+        res = res.status == 200 ? await res.json() : { "error": res.statusText };
 
         return res;
 
@@ -301,7 +301,7 @@ class base_client {
             `${this.rest_uri}/iserver/account/${account_id}/order/${order_id}`
         );
 
-        res = res.status == 200 ? await res.json() : null;
+        res = res.status == 200 ? await res.json() : { "error": res.statusText };
 
         return res;
 

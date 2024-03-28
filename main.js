@@ -188,23 +188,14 @@ async function place_order(side, price) {
         ]
     };
 
-    let err     = null;
-    let order   = null;
     let res     = await CLIENT.place_order(ACCOUNT_ID, args);
+    let order   = null;
 
-    while (res) {
-    
-        if (res.error) {
-
-            err = res.error;
-            
-            break;
-
-        }
+    while (!res.error) {
 
         res = await CLIENT.reply(res[0].id);
-
-        if (res && res[0].order_status) {
+            
+        if (!res.error && res[0].order_status) {
 
             order = res[0];
 
@@ -228,7 +219,7 @@ async function place_order(side, price) {
 
         }
 
-        update_screen(err);
+        update_screen(res.error ? res.error : "");
 
     }
 
@@ -239,15 +230,7 @@ async function cancel_order(order_id) {
     if (!order_id) return;
 
     let res = await CLIENT.cancel_order(ACCOUNT_ID, order_id);
-    let msg = null;
-
-    if (res)
-
-        msg = res.msg ? res.msg : res.error ? res.error : `cancel_order(${order_id}) response format not recognized`;
-
-    else
-
-        msg = `cancel_order(${order_id}) failed`;
+    let msg = res.msg ? res.msg : res.error ? res.error : `cancel_order(${order_id}) response format not recognized`;
 
     update_screen(msg);
 
@@ -258,18 +241,12 @@ async function modify_order(order_id, side, price) {
     if (!order_id) return;
 
     let args    = side == "buy" ? BID_ARGS : ASK_ARGS;
+
     args.price  = price;
-    let res     = await CLIENT.modify_order(ACCOUNT_ID, order_id, args);
-    let msg     = null;
-
-    if (res)
-
-        msg = res.order_status ? res.order_status : res.error ? res.error : `modify_order(${order_id} response format not recognized)`;
-
-    else
-
-        msg = `modify_order(${order_id}) failed`;
     
+    let res     = await CLIENT.modify_order(ACCOUNT_ID, order_id, args);
+    let msg     = res.order_status ? res.order_status : res.error ? res.error : `modify_order(${order_id} response format not recognized)`;
+
     update_screen(msg);
 
 }
