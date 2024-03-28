@@ -65,13 +65,18 @@ function update_screen(msg = null) {
 
 // quote
 
+MOD_STATES = [
+    "PreSubmitted",
+    "Submitted"
+]
+
 function update_quote() {
 
     BID_PX = MID_PX - WIDTH + OFFSET;
     ASK_PX = MID_PX + WIDTH + OFFSET;
 
-    if (BID_STATUS == "Active") modify_order("BUY", BID_PX);
-    if (ASK_STATUS == "Active") modify_order("SELL", ASK_PX); 
+    if (MOD_STATES.includes(BID_STATUS)) modify_order("BUY", BID_PX);
+    if (MOD_STATES.includes(ASK_STATUS)) modify_order("SELL", ASK_PX); 
 
     update_screen();
 

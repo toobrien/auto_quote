@@ -280,7 +280,7 @@ class base_client {
     async modify_order(account_id, order_id, args) {
 
         let res = await fetch(
-            `${this.res_uri}/iserver/account/${account_id}/order/${order_id}`,
+            `${this.rest_uri}/iserver/account/${account_id}/order/${order_id}`,
             {
                 method:     "POST",
                 body:       JSON.stringify(args),
