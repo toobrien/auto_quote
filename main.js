@@ -245,7 +245,7 @@ async function modify_order(order_id, side, price) {
 
     if (!order_id) return;
 
-    let args    = side == "buy" ? BID_ARGS : ASK_ARGS;
+    let args    = side == "BUY" ? BID_ARGS : ASK_ARGS;
 
     args.price  = price;
     
