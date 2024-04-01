@@ -214,12 +214,12 @@ async function place_order(side, price) {
 
         if (side == "BUY") {
 
-            BID_ARGS.order_id   = res[0].order_id;
+            BID_ARGS.order_id   = parseInt(res[0].order_id);
             BID_STATUS          = res[0].order_status;
 
         } else {
 
-            ASK_ARGS.order_id   = res[0].order_id;
+            ASK_ARGS.order_id   = parseInt(res[0].order_id);
             ASK_STATUS          = res[0].order_status;
 
         }
@@ -287,46 +287,30 @@ function handle_order_msg(msg) {
 
     for (let order of msg.args) {
 
-        let conid       = order.conid;
         let status      = order.status;
-        let side        = order.side;
-        let order_id    = order.order_id
-        // let r_qty    = order.remainingQuantity;
-        // let f_qty    = order.filledQuantity;
-
-        if (
-            conid       != CONID &&
-            order_id    != BID_ARGS.order_id && 
-            order_id    != ASK_ARGS.order_id
-        ) 
+        let order_id    = order.orderId;
         
-            return;
-        
-        if (side == "BUY") {
+        if (order_id == BID_ARGS.order_id) {
 
             if (status == "Cancelled" || status == "Filled") {
 
-                BID_STATUS          = null;
                 BID_ARGS.order_id   = null;
+                BID_STATUS          = null;
             
-            } else {
+            } else
 
                 BID_STATUS = status;
 
-            }
-
-        } else if (side == "SELL") {
+        } else if (order_id == ASK_ARGS.order_id) {
 
             if (status == "Cancelled" || status == "Filled") {
 
-                ASK_STATUS          = null;
                 ASK_ARGS.order_id   = null;
+                ASK_STATUS          = null;
 
-            } else {
+            } else
 
                 ASK_STATUS = status;
-
-            }
 
         }
         
