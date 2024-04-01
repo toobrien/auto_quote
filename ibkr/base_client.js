@@ -298,7 +298,8 @@ class base_client {
     async cancel_order(account_id, order_id) {
 
         let res = await fetch(
-            `${this.rest_uri}/iserver/account/${account_id}/order/${order_id}`
+            `${this.rest_uri}/iserver/account/${account_id}/order/${order_id}`,
+            { method: "DELETE" }
         );
 
         res = res.status == 200 ? await res.json() : { "error": res.statusText };

@@ -421,6 +421,14 @@ setInterval(
     () => { 
 
         HEARTBEAT += 1;
+
+        if (HEARTBEAT > 11) {
+
+            if (BID_STATUS) cancel_order(BID_ARGS.order_id);
+            if (ASK_STATUS) cancel_order(ASK_ARGS.order_id);
+
+        }
+
         update_quote();
 
     },
