@@ -288,7 +288,7 @@ class base_client {
             }
         )
 
-        res = res.status == 200 ? await res.json() : { "error": res.statusText };
+        res = res.status == 200 ? await res.json() : [ { "error": res.statusText } ];
 
         return res;
 
