@@ -287,13 +287,20 @@ function handle_order_msg(msg) {
 
     for (let order of msg.args) {
 
-        let conid   = order.conid;
-        let status  = order.status;
-        let side    = order.side;
-        // let r_qty   = order.remainingQuantity;
-        // let f_qty   = order.filledQuantity;
+        let conid       = order.conid;
+        let status      = order.status;
+        let side        = order.side;
+        let order_id    = order.order_id
+        // let r_qty    = order.remainingQuantity;
+        // let f_qty    = order.filledQuantity;
 
-        if (conid != CONID) return;
+        if (
+            conid       != CONID &&
+            order_id    != BID_ARGS.order_id && 
+            order_id    != ASK_ARGS.order_id
+        ) 
+        
+            return;
         
         if (side == "BUY") {
 
