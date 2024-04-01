@@ -75,8 +75,8 @@ function update_quote() {
     BID_PX = MID_PX - WIDTH + OFFSET;
     ASK_PX = MID_PX + WIDTH + OFFSET;
 
-    if (MOD_STATES.includes(BID_STATUS)) modify_order("BUY", BID_PX);
-    if (MOD_STATES.includes(ASK_STATUS)) modify_order("SELL", ASK_PX); 
+    if (MOD_STATES.includes(BID_STATUS)) modify_order(BID_ARGS.order_id, "BUY", BID_PX);
+    if (MOD_STATES.includes(ASK_STATUS)) modify_order(ASK_ARGS.order_id, "SELL", ASK_PX); 
 
     update_screen();
 
