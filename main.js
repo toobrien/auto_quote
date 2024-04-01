@@ -249,8 +249,8 @@ async function modify_order(order_id, side, price) {
 
     args.price  = price;
     
-    let res     = (await CLIENT.modify_order(ACCOUNT_ID, order_id, args))[0];
-    let msg     = res.order_status ? res.order_status : res.error ? res.error : `modify_order(${order_id} response format not recognized)`;
+    let res     = await CLIENT.modify_order(ACCOUNT_ID, order_id, args);
+    let msg     = res.error ? res.error : res[0].order_status ? res[0].order_status : `modify_order(${order_id} response format not recognized)`;
 
     update_screen(msg);
 
