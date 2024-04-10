@@ -1,5 +1,6 @@
 const { base_client, mdf }  = require("./ibkr/base_client");
 const readline              = require("readline");
+const fs                    = require("node:fs");
 const IN_MAP                = {};
 
 
@@ -12,9 +13,10 @@ process.stdin.setRawMode(true);
 
 // debug
 
+let DEBUG       = false;
 let LAST_KEY    = null;
 let LAST_STR    = null;
-
+let LOG_FILE    = "./log.txt";
 
 // screen
 
@@ -286,6 +288,10 @@ function handle_system_msg(msg) {
 function handle_order_msg(msg) {
 
     for (let order of msg.args) {
+
+        if (DEBUG)
+
+            fs.writeFile(LOG_FILE, JSON.stringify(order), { flag: "a+" }, (err) => {});
 
         let status      = order.status;
         let order_id    = order.orderId;

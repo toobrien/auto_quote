@@ -14,4 +14,12 @@
   "hb": 1711060544762
 }
 
+{
+
+  "encrypt_message": "1",
+  "order_id": "1095362571",
+  "order_status": "Submitted"
+
+}
+
 https://ibkrcampus.com/ibkr-api-page/webapi-doc/#endpoints
