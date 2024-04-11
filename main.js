@@ -4,7 +4,7 @@ const fs                    = require("node:fs");
 const IN_MAP                = {};
 
 
-// node main.js 637533450 0.25 4 5 10000
+// node main.js 637533450 0.25 4 5 10000 0
 
 
 readline.emitKeypressEvents(process.stdin);
@@ -407,9 +407,19 @@ function handle_order_msg(msg) {
             
                 exit(side);
             
-            else if (order_id == PT_OID)
+            else if (order_id == PT_OID) {
 
                 PT_OID = null;
+
+                if (CONTINUOUS)
+
+                    ; // TODO: reset bid/ask
+
+                else
+
+                    ; // TODO: ???
+
+            }
 
 
             // else unrelated order
@@ -469,6 +479,7 @@ const TICK_SIZE     = parseFloat(process.argv[3]);
 const SHIFT         = parseInt(process.argv[4]) * TICK_SIZE;
 const PT            = parseInt(process.argv[5]) * TICK_SIZE;
 const LIMIT         = parseInt(process.argv[6]);
+const CONTINUOUS    = parseInt(process.argv[7]);
 
 let BID_STATUS      = null;
 let ASK_STATUS      = null;
