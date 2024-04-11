@@ -22,4 +22,7 @@
 
 }
 
+"<h4>Confirm Mandatory Cap Price</h4>To avoid trading at a price that is not consistent with a fair and orderly market, IB may set a cap (for a buy order) or floor (for a sell order). THIS MAY CAUSE AN ORDER THAT WOULD OTHERWISE BE MARKETABLE NOT TO BE TRADED."
+
+
 https://ibkrcampus.com/ibkr-api-page/webapi-doc/#endpoints

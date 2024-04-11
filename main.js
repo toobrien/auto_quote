@@ -11,12 +11,14 @@ readline.emitKeypressEvents(process.stdin);
 process.stdin.setRawMode(true);
 
 
-// debug
+// debug / metrics
 
 let DEBUG       = false;
+let METRICS     = true;
 let LAST_KEY    = null;
 let LAST_STR    = null;
 let LOG_FILE    = "./log.txt";
+let MET_FILE    = "./metrics.csv";
 
 // screen
 
@@ -236,7 +238,7 @@ async function exit(side) {
 
     while (!res)
 
-        order = ack_order(res);
+        order = await ack_order(res);
     
     PT_OID      = order.order_id;
     let final   = LIMIT - (Date.now() - start);
@@ -288,7 +290,7 @@ async function place_order(side, price) {
     };
 
     let res     = await CLIENT.place_order(ACCOUNT_ID, args);
-    let order   = ack_order(res);
+    let order   = await ack_order(res);
 
     if (order) {
 
@@ -325,12 +327,16 @@ async function modify_order(order_id, side, price) {
 
     if (!order_id) return;
 
+    let t0      = Date.now();
     let args    = side == "BUY" ? BID_ARGS : ASK_ARGS;
 
     args.price  = price;
-    
+ 
     let res     = await CLIENT.modify_order(ACCOUNT_ID, order_id, args);
     let msg     = res.error ? res.error : res[0].order_status ? res[0].order_status : `modify_order(${order_id} response format not recognized)`;
+    let diff    = side == "BUY" ? (L1_BID_PX - price) / TICK_SIZE : (price - L1_ASK_PX);
+
+    METRICS ? fs.writeFile(MET_FILE, `modify_order,${Date.now() - t0},${diff},${(ASK_PX - BID_PX) * TICK_SIZE}\n`, { flag: "a+" }, (err) => {}) : null;
 
     update_screen(msg);
 
@@ -367,9 +373,7 @@ function handle_order_msg(msg) {
 
     for (let order of msg.args) {
 
-        if (DEBUG)
-
-            fs.writeFile(LOG_FILE, JSON.stringify(order), { flag: "a+" }, (err) => {});
+        DEBUG ? fs.writeFile(LOG_FILE, JSON.stringify(order), { flag: "a+" }, (err) => {}) : null;
         
         let status      = order.status;
         let order_id    = order.orderId;
