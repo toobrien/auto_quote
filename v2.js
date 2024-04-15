@@ -98,7 +98,8 @@ async function place_bracket_orders(
     child_price,
 ) {
 
-    let args = {
+    let bracket = parent_side == "BUY" ? BID_BRACKET : ASK_BRACKET;
+    let args    = {
         orders: [
             {
                 acctId:     ACCOUNT_ID,
@@ -123,13 +124,16 @@ async function place_bracket_orders(
         ]
     };
 
+    bracket.parent_args = args.orders[0];
+    bracket.child_args  = args.orders[1];  
+
     let place_order_res = await CLIENT.place_order(ACCOUNT_ID, args);
 
     if (place_order_res.error) {
 
         fs.writeFile(LOG_FILE, `${Date.now()},base_client.place_order,${place_order_res.error}\n`, { flag: "a+" }, (err) => {})
 
-        return place_order_res;
+        return place_order_res.error;
 
     }
 
@@ -141,17 +145,18 @@ async function place_bracket_orders(
 
             fs.writeFile(LOG_FILE, `${Date.now()},base_client.reply,${ack_bracket_order_res.error}\n`, { flag: "a+" }, (err) => {});
 
-            return res;
-    
-        } else {
-
-            // ...
-
+            return res.error;
+        
         }
 
     }
 
-    return place_bracket_order_res;
+    bracket.parent_id       = ack_bracket_order_res[0].order_id;
+    bracket.parent_status   = ack_bracket_order_res[0].order_status;
+    bracket.child_id        = ack_bracket_order_res[1].order_id;        // can i assume order here?
+    bracket.child_status    = ack_bracket_order_res[1].order_status;    // what if one ack succeeds, but the other fails?
+
+    return null;
 
 }
 
@@ -182,10 +187,8 @@ const LIMIT         = parseInt(process.argv[6]) * TICK_SIZE;
 
 let OFFERING        = false;
 let BIDDING         = false;
-let BID_ORDER       = null;
-let BID_TP          = null;
-let ASK_ORDER       = null;
-let ASK_TP          = null;
+let BID_BRACKET     = {};
+let ASK_BRACKET     = {};
 
 let HEARTBEAT       = 0;
 let L1_BID_PX       = null;
