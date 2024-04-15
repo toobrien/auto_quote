@@ -4,7 +4,7 @@ const fs                    = require("node:fs");
 const IN_MAP                = {};
 
 
-// node main.js 637533450 0.25 4 5 10000 0
+// node v1.js 637533450 0.25 4 5 10000 0
 
 
 readline.emitKeypressEvents(process.stdin);
@@ -347,8 +347,16 @@ async function modify_order(order_id, side, price) {
 
 function handle_market_data_msg(msg) {
 
-    if (msg[mdf.bid]) L1_BID_PX = parseFloat(msg[mdf.bid]);
-    if (msg[mdf.ask]) L1_ASK_PX = parseFloat(msg[mdf.ask]);
+    if (msg[mdf.bid]) {
+
+        L1_BID_PX = parseFloat(msg[mdf.bid]);
+
+    }
+    if (msg[mdf.ask]) {
+
+        L1_ASK_PX = parseFloat(msg[mdf.ask]);
+        
+    }
 
     INSIDE_MKT  = (L1_ASK_PX - L1_BID_PX) / TICK_SIZE;
     MID_PX      = L1_BID_PX + Math.ceil(INSIDE_MKT / 2) * TICK_SIZE;
@@ -469,8 +477,6 @@ function ws_handler(evt) {
     
     update_screen();
 
-    // console.log(JSON.stringify(msg, null, 2));
-
 }
 
 
@@ -526,7 +532,6 @@ CLIENT.sub_order_updates();
 console.log(`CONID:      ${String(CONID).padStart(COL_WIDTH)}`);
 console.log(`TICK_SIZE:  ${String(TICK_SIZE).padStart(COL_WIDTH)}`);
 console.log(`SHIFT:      ${String(SHIFT).padStart(COL_WIDTH)}\n`);
-
 
 setInterval(
     () => { 
