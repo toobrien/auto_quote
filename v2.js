@@ -46,20 +46,120 @@ function ws_handler(evt) {
             break;
 
     }
-    
-    update_screen();
 
 }
 
 
+function update_screen() {}
+
+
 async function offer() {}
 async function bid() {}
-async function place_order() {}
+
+
+async function ack_bracket_order(place_order_res) {
+
+    let ack_bracket_order_res = [];
+
+    for (let res of place_order_res) {
+
+        while (!res.error) {
+
+            res = await CLIENT.reply(res[0].id);
+                
+            if (res.error) {
+
+                ack_bracket_order_res.push(res);
+
+                break;
+            
+            } else if (res[0].order_status) {
+        
+                ack_bracket_order_res.push(res[0]);
+
+                break;
+
+            }
+
+        }
+
+    }
+
+    return ack_bracket_order_res;
+
+}
+
+
+async function place_bracket_orders(
+    parent_id,
+    parent_side,
+    parent_price,
+    child_side,
+    child_price,
+) {
+
+    let args = {
+        orders: [
+            {
+                acctId:     ACCOUNT_ID,
+                conid:      CONID,
+                cOID:       parent_id,
+                orderType:  "LMT",
+                price:      parent_price,
+                side:       parent_side,
+                tif:        "GTC",
+                quantity:   1
+            },
+            {
+                acctId:     ACCOUNT_ID,
+                conid:      CONID,
+                parentId:   parent_id,
+                orderType:  "LMT",
+                price:      child_price,
+                side:       child_side,
+                tif:        "GTC",
+                quantity:   1
+            }
+        ]
+    };
+
+    let place_order_res = await CLIENT.place_order(ACCOUNT_ID, args);
+
+    if (place_order_res.error) {
+
+        fs.writeFile(LOG_FILE, `${Date.now()},base_client.place_order,${place_order_res.error}\n`, { flag: "a+" }, (err) => {})
+
+        return place_order_res;
+
+    }
+
+    let ack_bracket_order_res = await ack_bracket_order(res);
+
+    for (let res of ack_bracket_order_res) {
+
+        if (res.error) {
+
+            fs.writeFile(LOG_FILE, `${Date.now()},base_client.reply,${ack_bracket_order_res.error}\n`, { flag: "a+" }, (err) => {});
+
+            return res;
+    
+        } else {
+
+            // ...
+
+        }
+
+    }
+
+    return place_bracket_order_res;
+
+}
+
+
 async function modify_order() {}
 async function cancel_order() {}
 async function update_quote() {}
 async function quit() {}
-function update_screen() {}
 
 
 // init
@@ -82,8 +182,35 @@ const LIMIT         = parseInt(process.argv[6]) * TICK_SIZE;
 
 let OFFERING        = false;
 let BIDDING         = false;
+let BID_ORDER       = null;
+let BID_TP          = null;
+let ASK_ORDER       = null;
+let ASK_TP          = null;
+
 let HEARTBEAT       = 0;
+let L1_BID_PX       = null;
+let L1_ASK_PX       = null;
+let BID_PX          = null;
+let ASK_PX          = null;
+
+let LOG_FILE        = "./log.txt";
+let MET_FILE        = "./metrics.csv";
 
 CLIENT.set_ws_handlers(msg_handler = ws_handler);
 CLIENT.sub_market_data([ CONID ], [ mdf.bid, mdf.ask ]);
 CLIENT.sub_order_updates();
+
+setInterval(
+    () => { 
+
+        HEARTBEAT += 1;
+
+        if (HEARTBEAT > 11) {
+
+            //
+
+        }
+
+    },
+    1000
+);
