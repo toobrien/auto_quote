@@ -59,46 +59,33 @@ async function bid() {}
 
 async function ack_bracket_order(place_order_res) {
 
-    let ack_bracket_order_res = [];
+    let res         = {};
+    let message_id  = place_order_res[0].id;
 
-    for (let res of place_order_res) {
+    while (!res.error) {
 
-        while (!res.error) {
-
-            res = await CLIENT.reply(res[0].id);
-                
-            if (res.error) {
-
-                ack_bracket_order_res.push(res);
-
-                break;
+        res = await CLIENT.reply(message_id);
             
-            } else if (res[0].order_status) {
-        
-                ack_bracket_order_res.push(res[0]);
-
-                break;
-
-            }
-
-        }
+        if (res[0]) break;
 
     }
 
-    return ack_bracket_order_res;
+    return res;
 
 }
 
 
 async function place_bracket_orders(
-    parent_id,
     parent_side,
     parent_price,
-    child_side,
-    child_price,
+    child_price
 ) {
 
-    let bracket = parent_side == "BUY" ? BID_BRACKET : ASK_BRACKET;
+
+    let bracket     = parent_side == "BUY" ? BID_BRACKET : ASK_BRACKET;
+    let parent_id   = Date.now();
+    let child_side  = parent_side == "BUY" ? "SELL" : "BUY";
+
     let args    = {
         orders: [
             {
@@ -124,45 +111,58 @@ async function place_bracket_orders(
         ]
     };
 
-    bracket.parent_args = args.orders[0];
-    bracket.child_args  = args.orders[1];  
-
     let place_order_res = await CLIENT.place_order(ACCOUNT_ID, args);
 
     if (place_order_res.error) {
 
         fs.writeFile(LOG_FILE, `${Date.now()},base_client.place_order,${place_order_res.error}\n`, { flag: "a+" }, (err) => {})
 
-        return place_order_res.error;
+        return place_order_res;
 
     }
 
-    let ack_bracket_order_res = await ack_bracket_order(res);
+    let ack_bracket_order_res = await ack_bracket_order(place_order_res);
 
-    for (let res of ack_bracket_order_res) {
+    if (ack_bracket_order_res.error) {
 
-        if (res.error) {
+        fs.writeFile(LOG_FILE, `${Date.now()},base_client.reply,${ack_bracket_order_res.error}\n`, { flag: "a+" }, (err) => {});
 
-            fs.writeFile(LOG_FILE, `${Date.now()},base_client.reply,${ack_bracket_order_res.error}\n`, { flag: "a+" }, (err) => {});
-
-            return res.error;
-        
-        }
-
+        return ack_bracket_order_res;
+    
     }
 
+    bracket.args            = args;
     bracket.parent_id       = ack_bracket_order_res[0].order_id;
     bracket.parent_status   = ack_bracket_order_res[0].order_status;
-    bracket.child_id        = ack_bracket_order_res[1].order_id;        // can i assume order here?
-    bracket.child_status    = ack_bracket_order_res[1].order_status;    // what if one ack succeeds, but the other fails?
 
-    return null;
+    return {};
 
 }
 
 
-async function modify_order() {}
-async function cancel_order() {}
+async function modify_bracket_order(parent_id, side, parent_px, child_px) {
+
+    let bracket = side == "BUY" ? BID_BRACKET : ASK_BRACKET;
+    let args    = bracket.args;
+
+    args.orders[0].price = parent_px;
+    args.orders[1].price = child_px;
+
+    let modify_order_res = await CLIENT.modify_order(ACCOUNT_ID, parent_id, args);
+
+    if (modify_order_res.error) {
+
+        fs.writeFile(LOG_FILE, `${Date.now()},base_client.modfiy_order,${modify_order_res.error}\n`, { flag: "a+" }, (err) => {});
+
+        return modify_order_res;
+
+    }
+
+    return {};
+
+}
+
+async function cancel_bracket_order() {}
 async function update_quote() {}
 async function quit() {}
 
@@ -216,4 +216,22 @@ setInterval(
 
     },
     1000
+);
+
+
+// test
+
+setTimeout(
+    async () => {
+
+        let res = await place_bracket_orders("BUY", 5000, 5001.25);
+
+        if (!res.error)
+        
+            res = await modify_bracket_order(BID_BRACKET.parent_id, "BUY", 5001, 50002.25);
+        
+        0;
+
+    },
+    0
 );
