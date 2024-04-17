@@ -1,4 +1,5 @@
 const { base_client, mdf }  = require("./ibkr/base_client");
+const { format }            = require("date-fns");
 const readline              = require("readline");
 const fs                    = require("node:fs");
 const IN_MAP                = {};
@@ -74,7 +75,8 @@ async function bid() {}
 
 
 async function ack_order(place_order_res) {
-
+    
+    let t0          = Date.now();
     let res         = {};
     let message_id  = place_order_res[0].id;
 
@@ -85,6 +87,8 @@ async function ack_order(place_order_res) {
         if (res[0]) break;
 
     }
+
+    METRICS ? fs.writeFile(MET_FILE, `${format(t0, FMT)},ack_order,${Date.now() - t0}\n`, { flag: "a+" }, (err) => {}) : null;
 
     return res;
 
@@ -97,6 +101,7 @@ async function place_order(
     price
 ) {
 
+    let t0      = Date.now();
     let args    = {
         orders: [
             {
@@ -136,6 +141,8 @@ async function place_order(
 
     ORDERS[id] = o;
 
+    METRICS ? fs.writeFile(MET_FILE, `${format(t0, FMT)},place_order,${Date.now() - t0}\n`, { flag: "a+" }, (err) => {}) : null;
+
     return { order: o };
 
 }
@@ -143,7 +150,8 @@ async function place_order(
 
 async function modify_order(o) {
 
-    let modify_order_res = await CLIENT.modify_order(ACCOUNT_ID, o.id, o.args);
+    let t0                  = Date.now();
+    let modify_order_res    = await CLIENT.modify_order(ACCOUNT_ID, o.id, o.args);
 
     if (modify_order_res.error) {
 
@@ -153,6 +161,8 @@ async function modify_order(o) {
 
     }
 
+    METRICS ? fs.writeFile(MET_FILE, `${format(t0, FMT)},modify_order,${Date.now() - t0}\n`, { flag: "a+" }, (err) => {}) : null;
+
     return {};
 
 }
@@ -160,7 +170,8 @@ async function modify_order(o) {
 
 async function cancel_order(o) {
 
-    let cancel_order_res = await CLIENT.cancel_order(ACCOUNT_ID, o.id);
+    let t0                  = Date.now();
+    let cancel_order_res    = await CLIENT.cancel_order(ACCOUNT_ID, o.id);
 
     if (cancel_order_res.error) {
 
@@ -169,6 +180,8 @@ async function cancel_order(o) {
         return cancel_order_res;
 
     }
+
+    METRICS ? fs.writeFile(MET_FILE, `${format(t0, FMT)},cancel_order,${Date.now() - t0}\n`, { flag: "a+" }, (err) => {}) : null;
 
     return {};
 
@@ -189,6 +202,8 @@ IN_MAP["d"] = offer();
 IN_MAP["c"] = bid();
 IN_MAP["q"] = quit();
 
+const FMT           = "yyyy-MM-dd'T'HH:mm:ss.T";
+
 const ACCOUNT_ID    = process.env.IBKR_ACCOUNT_ID;
 const CLIENT        = new base_client();
 const CONID         = parseInt(process.argv[2]);
@@ -207,6 +222,8 @@ let L1_ASK_PX       = null;
 let BID_PX          = null;
 let ASK_PX          = null;
 
+let LOGGING         = false;
+let METRICS         = true;
 let LOG_FILE        = "./log.txt";
 let MET_FILE        = "./metrics.csv";
 
