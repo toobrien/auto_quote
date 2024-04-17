@@ -131,10 +131,10 @@ async function place_order(
     
     }
 
-    let id  = ack_bracket_order_res[0].id;
+    let id  = ack_bracket_order_res[0].order_id;
     let o   = new order(id, side, type, args.orders[0]);
 
-    ORDERS.id = o;
+    ORDERS[id] = o;
 
     return { order: o };
 
@@ -235,13 +235,22 @@ setInterval(
 setTimeout(
     async () => {
 
-        let place_order_res = await place_order("BUY", "bid_quote", 5000);
+        let o                   = null;
+        let modify_order_res    = null;
+        let cancel_order_res    = null;
+        let place_order_res     = await place_order("BUY", "bid_quote", 5000);
 
         if (!place_order_res.error) {
 
-            let o                   = place_order_res.order;
-            o.args.price            = 5001;
-            let modify_order_res    = await modify_order(o);
+            o                   = place_order_res.order;
+            o.args.price        = 5001;
+            modify_order_res    = await modify_order(o);
+
+        }
+
+        if (!modify_order_res.error) {
+
+            cancel_order_res = await cancel_order(o);
 
         }
         
