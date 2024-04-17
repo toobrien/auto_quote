@@ -7,6 +7,22 @@ const IN_MAP                = {};
 // node v1.js 637533450 0.25 6 9 5
 
 
+// order
+
+class order {
+
+    constructor(id, side, type, args) {
+
+        this.id     = id;
+        this.side   = side;
+        this.type   = type;
+        this.args   = args;
+
+    }
+
+}
+
+
 // functions
 
 
@@ -57,7 +73,7 @@ async function offer() {}
 async function bid() {}
 
 
-async function ack_bracket_order(place_order_res) {
+async function ack_order(place_order_res) {
 
     let res         = {};
     let message_id  = place_order_res[0].id;
@@ -75,36 +91,20 @@ async function ack_bracket_order(place_order_res) {
 }
 
 
-async function place_bracket_orders(
-    parent_side,
-    parent_price,
-    child_price
+async function place_order(
+    side,
+    type,
+    price
 ) {
-
-
-    let bracket     = parent_side == "BUY" ? BID_BRACKET : ASK_BRACKET;
-    let parent_id   = Date.now();
-    let child_side  = parent_side == "BUY" ? "SELL" : "BUY";
 
     let args    = {
         orders: [
             {
                 acctId:     ACCOUNT_ID,
                 conid:      CONID,
-                cOID:       parent_id,
                 orderType:  "LMT",
-                price:      parent_price,
-                side:       parent_side,
-                tif:        "GTC",
-                quantity:   1
-            },
-            {
-                acctId:     ACCOUNT_ID,
-                conid:      CONID,
-                parentId:   parent_id,
-                orderType:  "LMT",
-                price:      child_price,
-                side:       child_side,
+                price:      price,
+                side:       side,
                 tif:        "GTC",
                 quantity:   1
             }
@@ -115,44 +115,39 @@ async function place_bracket_orders(
 
     if (place_order_res.error) {
 
-        fs.writeFile(LOG_FILE, `${Date.now()},base_client.place_order,${place_order_res.error}\n`, { flag: "a+" }, (err) => {})
+        fs.writeFile(LOG_FILE, `${Date.now()},ERROR,place_order,${place_order_res.error}\n`, { flag: "a+" }, (err) => {})
 
         return place_order_res;
 
     }
 
-    let ack_bracket_order_res = await ack_bracket_order(place_order_res);
+    let ack_bracket_order_res = await ack_order(place_order_res);
 
     if (ack_bracket_order_res.error) {
 
-        fs.writeFile(LOG_FILE, `${Date.now()},base_client.reply,${ack_bracket_order_res.error}\n`, { flag: "a+" }, (err) => {});
+        fs.writeFile(LOG_FILE, `${Date.now()},ERROR,reply,${ack_bracket_order_res.error}\n`, { flag: "a+" }, (err) => {});
 
         return ack_bracket_order_res;
     
     }
 
-    bracket.args            = args;
-    bracket.parent_id       = ack_bracket_order_res[0].order_id;
-    bracket.parent_status   = ack_bracket_order_res[0].order_status;
+    let id  = ack_bracket_order_res[0].id;
+    let o   = new order(id, side, type, args.orders[0]);
 
-    return {};
+    ORDERS.id = o;
+
+    return { order: o };
 
 }
 
 
-async function modify_bracket_order(parent_id, side, parent_px, child_px) {
+async function modify_order(o) {
 
-    let bracket = side == "BUY" ? BID_BRACKET : ASK_BRACKET;
-    let args    = bracket.args;
-
-    args.orders[0].price = parent_px;
-    args.orders[1].price = child_px;
-
-    let modify_order_res = await CLIENT.modify_order(ACCOUNT_ID, parent_id, args);
+    let modify_order_res = await CLIENT.modify_order(ACCOUNT_ID, o.id, o.args);
 
     if (modify_order_res.error) {
 
-        fs.writeFile(LOG_FILE, `${Date.now()},base_client.modfiy_order,${modify_order_res.error}\n`, { flag: "a+" }, (err) => {});
+        fs.writeFile(LOG_FILE, `${Date.now()},ERROR,modfiy_order,${modify_order_res.error}\n`, { flag: "a+" }, (err) => {});
 
         return modify_order_res;
 
@@ -162,7 +157,24 @@ async function modify_bracket_order(parent_id, side, parent_px, child_px) {
 
 }
 
-async function cancel_bracket_order() {}
+
+async function cancel_order(o) {
+
+    let cancel_order_res = await CLIENT.cancel_order(ACCOUNT_ID, o.id);
+
+    if (cancel_order_res.error) {
+
+        fs.writeFile(LOG_FILE, `${Date.now()},ERROR,cancel_order,${cancel_order_res.error}\n`, { flag: "a+" }, (err) => {});
+
+        return cancel_order_res;
+
+    }
+
+    return {};
+
+}
+
+
 async function update_quote() {}
 async function quit() {}
 
@@ -185,10 +197,9 @@ const MIN_LEVEL     = parseInt(process.argv[4]) * TICK_SIZE;
 const MAX_LEVEL     = parseInt(process.argv[5]) * TICK_SIZE;
 const LIMIT         = parseInt(process.argv[6]) * TICK_SIZE;
 
-let OFFERING        = false;
-let BIDDING         = false;
-let BID_BRACKET     = {};
-let ASK_BRACKET     = {};
+let OFFER_STATE     = null;
+let BID_STATE       = null;
+let ORDERS          = {};          
 
 let HEARTBEAT       = 0;
 let L1_BID_PX       = null;
@@ -224,11 +235,15 @@ setInterval(
 setTimeout(
     async () => {
 
-        let res = await place_bracket_orders("BUY", 5000, 5001.25);
+        let place_order_res = await place_order("BUY", "bid_quote", 5000);
 
-        if (!res.error)
-        
-            res = await modify_bracket_order(BID_BRACKET.parent_id, "BUY", 5001, 50002.25);
+        if (!place_order_res.error) {
+
+            let o                   = place_order_res.order;
+            o.args.price            = 5001;
+            let modify_order_res    = await modify_order(o);
+
+        }
         
         0;
 
