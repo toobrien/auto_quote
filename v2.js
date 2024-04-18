@@ -335,12 +335,12 @@ setTimeout(
         let o                   = null;
         let modify_order_res    = null;
         let cancel_order_res    = null;
-        let place_order_res     = await place_order("BUY", "bid_quote", 5000);
+        let place_order_res     = await place_order("BUY", "bid_quote", 4950);
 
         if (!place_order_res.error) {
 
             o                   = place_order_res.order;
-            o.args.price        = 5001;
+            o.args.price        = 4951;
             modify_order_res    = await modify_order(o);
 
         }
