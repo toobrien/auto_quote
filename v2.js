@@ -30,13 +30,31 @@ class order {
 
 function update_screen() {
 
-    process.stdout.cursorTo(0, STATE_LINE);
+    for (let i = 0; i < process.stdout.rows; i++) {
+
+        process.stdout.cursorTo(0, i);
+        process.stdout.clearLine(0);
+    
+    }
+
+    process.stdout.cursorTo(0, 0);
 
     for (let o of ORDERS) {
 
-        let line = ``;
+        let offset = o.side == "BUY" ? (L1_BID_PX - o.price) : o.price - L1_ASK_PX;
+        
+        offset /= TICK_SIZE;
+        
+        let fields = [
+            o.id.padString(COL_WIDTH),
+            o.side.padString(COL_WIDTH),
+            o.type.padString(COL_WIDTH),
+            o.status.padString(COL_WIDTH),
+            String(offset).padString(COL_WIDTH)
+        ];
+        
+        let line = `${fields[0]}${fields[1]}${fields[2]}${fields[3]}${fields[4]}${fields[5]}\n`;
 
-        process.stdout.clearLine(0);
         process.stdout.write(line);
 
     }
@@ -80,9 +98,7 @@ function handle_order_msg(msg) {
 
 function handle_system_msg(msg) {
 
-    let hb = msg.hb
-
-    if (hb) HEARTBEAT = 0;
+    if (msg.hb) HEARTBEAT = 0;
 
 }
 
@@ -199,10 +215,9 @@ async function place_order(
     
     }
 
-    let id  = ack_bracket_order_res[0].order_id;
-    let o   = new order(id, side, type, args.orders[0]);
-
-    ORDERS[id] = o;
+    let id      = ack_bracket_order_res[0].order_id;
+    let o       = new order(id, side, type, args.orders[0]);
+    ORDERS[id]  = o;
 
     METRICS ? fs.writeFile(MET_FILE, `${format(t0, FMT)},place_order,${Date.now() - t0}\n`, { flag: "a+" }, (err) => {}) : null;
 
