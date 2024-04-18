@@ -17,6 +17,7 @@ class order {
         this.id     = id;
         this.side   = side;
         this.type   = type;
+        this.status = null;
         this.args   = args;
 
     }
@@ -27,9 +28,71 @@ class order {
 // functions
 
 
-function handle_order_msg(msg) {}
-function handle_system_msg(msg) {}
-function handle_market_data_msg(msg) {}
+function update_screen() {
+
+    process.stdout.cursorTo(0, STATE_LINE);
+
+    for (let o of ORDERS) {
+
+        let line = ``;
+
+        process.stdout.clearLine(0);
+        process.stdout.write(line);
+
+    }
+
+}
+
+
+
+function handle_order_msg(msg) {
+
+    for (let args of msg.args) {
+
+        DEBUG ? fs.writeFile(LOG_FILE, JSON.stringify(order), { flag: "a+" }, (err) => {}) : null;
+
+        let status      = args.status;
+        let order_id    = args.orderId;
+        let o           = ORDERS[order_id];
+
+        if (o) {
+
+            o.status = status;
+
+            if (status == "Filled") {
+
+                delete ORDERS[order_id];
+
+                exit(o);
+
+            } else if (status == "Cancelled") {
+
+                delete ORDERS[order_id];
+
+            }
+
+        }
+
+    }
+
+}
+
+
+function handle_system_msg(msg) {
+
+    let hb = msg.hb
+
+    if (hb) HEARTBEAT = 0;
+
+}
+
+
+function handle_market_data_msg(msg) {
+
+    if (msg[mdf.bid]) L1_BID_PX = parseFloat(msg[mdf.bid]);
+    if (msg[mdf.ask]) L1_ASK_PX = parseFloat(msg[mdf.ask]);
+
+}
 
 
 function ws_handler(evt) {
@@ -43,18 +106,21 @@ function ws_handler(evt) {
         case `smd+${CONID}`:
 
             handle_market_data_msg(msg);
+            update_screen();
 
             break;
         
         case "system":
 
             handle_system_msg(msg);
+            update_screen();
 
             break;
 
         case "sor":
 
             handle_order_msg(msg);
+            update_screen();
 
             break;
 
@@ -65,9 +131,6 @@ function ws_handler(evt) {
     }
 
 }
-
-
-function update_screen() {}
 
 
 async function offer() {}
@@ -226,6 +289,8 @@ let LOGGING         = false;
 let METRICS         = true;
 let LOG_FILE        = "./log.txt";
 let MET_FILE        = "./metrics.csv";
+
+let COL_WIDTH       = 15;
 
 CLIENT.set_ws_handlers(msg_handler = ws_handler);
 CLIENT.sub_market_data([ CONID ], [ mdf.bid, mdf.ask ]);
