@@ -108,6 +108,8 @@ function handle_market_data_msg(msg) {
     if (msg[mdf.bid]) L1_BID_PX = parseFloat(msg[mdf.bid]);
     if (msg[mdf.ask]) L1_ASK_PX = parseFloat(msg[mdf.ask]);
 
+    update_quote();
+
 }
 
 
@@ -266,7 +268,13 @@ async function cancel_order(o) {
 }
 
 
-async function update_quote() {}
+async function update_quote() {
+
+    
+
+}
+
+
 async function quit() {}
 
 
