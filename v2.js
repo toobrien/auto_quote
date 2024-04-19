@@ -39,6 +39,9 @@ function update_screen() {
 
     process.stdout.cursorTo(0, 0);
 
+    process.stdout.write(`${"heartbeat:".padStart(COL_WIDTH)}${HEARTBEAT.padStart(COL_WIDTH)}\n`);
+    process.stdout.write(`${"l1:".padStart(COL_WIDTH)}${L1_BID_PX.padStart(COL_WIDTH)}${L1_ASK_PX.padStart(COL_WIDTH)}\n`);
+
     for (let o of ORDERS) {
 
         let offset = o.side == "BUY" ? (L1_BID_PX - o.price) : o.price - L1_ASK_PX;
@@ -62,12 +65,56 @@ function update_screen() {
 }
 
 
+async function exit(o) {
+
+    let price   = o.side == "BUY" ? o.args.price + LIMIT : o.args.price - LIMIT;
+    let side    = o.side == "BUY" ? "SELL" : "BUY";
+    
+    while (true) {
+
+        let place_order_res = await place_order(side, "exit", price);
+
+        if (!place_order_res.error)
+
+            break;
+
+    }
+
+    let handle = setTimeout(
+        async () => {
+
+            let o = place_order_res.order;
+
+            if (o.status != "Filled" && o.status != "Cancelled") {
+
+                delete o.args.price;
+
+                o.args.type = "MKT";
+
+                while(true) {
+
+                    let modify_order_res = await modify_order(o);
+
+                    if (!modify_order_res.error)
+
+                        break;
+
+                }
+
+            }
+
+        }, 
+        TIMEOUT
+    );
+
+}
+
 
 function handle_order_msg(msg) {
 
     for (let args of msg.args) {
 
-        DEBUG ? fs.writeFile(LOG_FILE, JSON.stringify(order), { flag: "a+" }, (err) => {}) : null;
+        DEBUG ? fs.writeFile(LOG_FILE, JSON.stringify(args), { flag: "a+" }, (err) => {}) : null;
 
         let status      = args.status;
         let order_id    = args.orderId;
@@ -81,13 +128,15 @@ function handle_order_msg(msg) {
 
                 delete ORDERS[order_id];
 
-                exit(o);
+                exit(o);    // await?
 
             } else if (status == "Cancelled") {
 
                 delete ORDERS[order_id];
 
             }
+
+            // need to handle bid/ask state
 
         }
 
@@ -105,10 +154,21 @@ function handle_system_msg(msg) {
 
 function handle_market_data_msg(msg) {
 
-    if (msg[mdf.bid]) L1_BID_PX = parseFloat(msg[mdf.bid]);
-    if (msg[mdf.ask]) L1_ASK_PX = parseFloat(msg[mdf.ask]);
+    if (msg[mdf.bid]) {
 
-    update_quote();
+        L1_BID_PX = parseFloat(msg[mdf.bid]);
+
+        update_quote("BUY", L1_BID_PX);
+
+    }
+
+    if (msg[mdf.ask]) {
+        
+        L1_ASK_PX = parseFloat(msg[mdf.ask]);
+
+        update_quote("SELL", L1_ASK_PX);
+
+    }
 
 }
 
@@ -151,8 +211,12 @@ function ws_handler(evt) {
 }
 
 
-async function offer() {}
-async function bid() {}
+async function toggle_offer() {}
+async function toggle_bid() {
+
+
+
+}
 
 
 async function ack_order(place_order_res) {
@@ -268,14 +332,60 @@ async function cancel_order(o) {
 }
 
 
-async function update_quote() {
+async function update_quote(side, l1) {
 
-    
+    for (let o of ORDERS) {
+
+        if (o.side == side && o.type == "quote") {
+
+            let level = Math.abs(o.args.price - l1);
+
+            if (level > MAX_LEVEL || level < MIN_LEVEL) {
+                
+                o.args.price = side == "BUY" ? L1_BID_PX - MAX_LEVEL : L1_ASK_PX + MAX_LEVEL;
+
+                let modify_order_res = await modify_order(o);
+
+                if (modify_order_res.error) {
+
+                    // ...
+
+                }
+
+            }
+
+        }
+
+    }
 
 }
 
 
-async function quit() {}
+async function quit() {
+
+    for (let o of ORDERS) {
+
+        if (o.type == "quote") {
+
+            while (true) {
+
+                let cancel_order_res = await cancel_order(o);
+
+                if (!cancel_order_res.error)
+
+                    break;
+
+            }
+
+        } else if (o.type == "exit") {
+
+            // ???
+
+        }
+
+    }
+
+}
 
 
 // init
@@ -284,9 +394,9 @@ async function quit() {}
 readline.emitKeypressEvents(process.stdin);
 process.stdin.setRawMode(true);
 
-IN_MAP["d"] = offer();
-IN_MAP["c"] = bid();
-IN_MAP["q"] = quit();
+IN_MAP["d"] = toggle_offer;
+IN_MAP["c"] = toggle_bid;
+IN_MAP["q"] = quit;
 
 const FMT           = "yyyy-MM-dd'T'HH:mm:ss.T";
 
@@ -296,17 +406,16 @@ const CONID         = parseInt(process.argv[2]);
 const TICK_SIZE     = parseFloat(process.argv[3]);
 const MIN_LEVEL     = parseInt(process.argv[4]) * TICK_SIZE;
 const MAX_LEVEL     = parseInt(process.argv[5]) * TICK_SIZE;
-const LIMIT         = parseInt(process.argv[6]) * TICK_SIZE;
+const LIMIT         = parsetInt(process.argv[6]) * TICK_SIZE;
+const TIMEOUT       = parseInt(process.argv[7]);
 
-let OFFER_STATE     = null;
+let ASK_STATE       = null;
 let BID_STATE       = null;
 let ORDERS          = {};          
 
 let HEARTBEAT       = 0;
 let L1_BID_PX       = null;
 let L1_ASK_PX       = null;
-let BID_PX          = null;
-let ASK_PX          = null;
 
 let LOGGING         = false;
 let METRICS         = true;
@@ -343,8 +452,9 @@ setTimeout(
         let o                   = null;
         let modify_order_res    = null;
         let cancel_order_res    = null;
-        let place_order_res     = await place_order("BUY", "bid_quote", 4950);
+        let place_order_res     = await place_order("BUY", "quote", 4950);
 
+        /*
         if (!place_order_res.error) {
 
             o                   = place_order_res.order;
@@ -358,6 +468,7 @@ setTimeout(
             cancel_order_res = await cancel_order(o);
 
         }
+        */
         
         0;
 
