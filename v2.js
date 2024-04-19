@@ -211,10 +211,16 @@ function ws_handler(evt) {
 }
 
 
-async function toggle_offer() {}
+async function toggle_offer() {
+
+    // ...
+
+}
+
+
 async function toggle_bid() {
 
-
+    // ...
 
 }
 
