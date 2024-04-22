@@ -211,16 +211,106 @@ function ws_handler(evt) {
 }
 
 
-async function toggle_offer() {
+async function toggle_quote(str, key) {
 
-    // ...
+    let side    = null;
+    let price   = null;
+    let state   = null;
+
+    if (key == "c") {
+
+        side    = "BUY";
+        price   = L1_BID_PX - MAX_LEVEL;
+        state   = "BID_STATE"; 
+
+    } else if (key == "d") {
+
+        side    = "SELL";
+        price   = L1_ASK_PX + MAX_LEVEL;
+        state   = "ASK_STATE";
+
+    } else return;
+
+    switch(state) {
+
+        case null:
+
+            let place_order_res = await place_order(side, "quote", price);
+
+            if (!place_order_res.error)
+
+                STATES[state] = "active";
+
+            break;
+
+        case "active":
+
+            let to_cancel = null; 
+
+            for (let o of ORDERS) {
+
+                if (o.side == side && o.type == "quote") {
+
+                    to_cancel = o;
+
+                    break;
+
+                }
+
+            }
+
+            if (to_cancel) {
+
+                let cancel_order_res = { error: 1 }
+
+                while (cancel_order_res.error)
+
+                    cancel_order_res = await cancel_order();
+            
+            }
+
+            STATES[state] = null;
+            
+            break;
+
+        case "closing":
+
+            // ???
+
+            break;
+
+        default:
+
+            break;
+
+    }
 
 }
 
 
-async function toggle_bid() {
+async function quit() {
 
-    // ...
+    for (let o of ORDERS) {
+
+        if (o.type == "quote") {
+
+            while (true) {
+
+                let cancel_order_res = await cancel_order(o);
+
+                if (!cancel_order_res.error)
+
+                    break;
+
+            }
+
+        } else if (o.type == "exit") {
+
+            // ???
+
+        }
+
+    }
 
 }
 
@@ -367,42 +457,28 @@ async function update_quote(side, l1) {
 }
 
 
-async function quit() {
-
-    for (let o of ORDERS) {
-
-        if (o.type == "quote") {
-
-            while (true) {
-
-                let cancel_order_res = await cancel_order(o);
-
-                if (!cancel_order_res.error)
-
-                    break;
-
-            }
-
-        } else if (o.type == "exit") {
-
-            // ???
-
-        }
-
-    }
-
-}
-
-
 // init
 
 
 readline.emitKeypressEvents(process.stdin);
 process.stdin.setRawMode(true);
 
-IN_MAP["d"] = toggle_offer;
-IN_MAP["c"] = toggle_bid;
-IN_MAP["q"] = quit;
+process.stdin.on(
+    'keypress', 
+    (str, key) => { 
+
+        let name = key["name"];
+        LAST_STR = str;
+        LAST_KEY = JSON.stringify(key); 
+                
+        if (name in IN_MAP) IN_MAP[name](str, key);
+        
+    }
+);
+
+IN_MAP["d"]         = toggle_quote;
+IN_MAP["c"]         = toggle_quote;
+IN_MAP["q"]         = quit;
 
 const FMT           = "yyyy-MM-dd'T'HH:mm:ss.T";
 
@@ -414,21 +490,17 @@ const MIN_LEVEL     = parseInt(process.argv[4]) * TICK_SIZE;
 const MAX_LEVEL     = parseInt(process.argv[5]) * TICK_SIZE;
 const LIMIT         = parsetInt(process.argv[6]) * TICK_SIZE;
 const TIMEOUT       = parseInt(process.argv[7]);
-
-let ASK_STATE       = null;
-let BID_STATE       = null;
-let ORDERS          = {};          
+const COL_WIDTH     = 15;
+const LOGGING       = false;
+const METRICS       = true;
+const LOG_FILE      = "./log.txt";
+const MET_FILE      = "./metrics.csv";
+const STATES        = { "BID_STATE": null, "ASK_STATE": null };
+const ORDERS        = {};          
 
 let HEARTBEAT       = 0;
 let L1_BID_PX       = null;
 let L1_ASK_PX       = null;
-
-let LOGGING         = false;
-let METRICS         = true;
-let LOG_FILE        = "./log.txt";
-let MET_FILE        = "./metrics.csv";
-
-let COL_WIDTH       = 15;
 
 CLIENT.set_ws_handlers(msg_handler = ws_handler);
 CLIENT.sub_market_data([ CONID ], [ mdf.bid, mdf.ask ]);
@@ -452,6 +524,7 @@ setInterval(
 
 // test
 
+/*
 setTimeout(
     async () => {
 
@@ -460,7 +533,6 @@ setTimeout(
         let cancel_order_res    = null;
         let place_order_res     = await place_order("BUY", "quote", 4950);
 
-        /*
         if (!place_order_res.error) {
 
             o                   = place_order_res.order;
@@ -473,11 +545,11 @@ setTimeout(
 
             cancel_order_res = await cancel_order(o);
 
-        }
-        */
+        }        
         
         0;
 
     },
     0
 );
+*/
