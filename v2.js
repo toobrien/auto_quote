@@ -509,7 +509,6 @@ IN_MAP["c"]         = toggle_quote;
 IN_MAP["q"]         = quit;
 
 const FMT           = "yyyy-MM-dd'T'HH:mm:ss.T";
-
 const ACCOUNT_ID    = process.env.IBKR_ACCOUNT_ID;
 const CLIENT        = new base_client();
 const CONID         = parseInt(process.argv[2]);
