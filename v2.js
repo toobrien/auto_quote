@@ -364,11 +364,13 @@ async function quit() {
 
         } else if (o.type == "exit") {
 
-            // ???
+            // leave closing order?
 
         }
 
     }
+
+    process.exit();
 
 }
 
