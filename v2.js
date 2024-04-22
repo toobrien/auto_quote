@@ -67,48 +67,40 @@ function update_screen() {
 
 async function exit(o) {
 
-    let price   = o.side == "BUY" ? o.args.price + LIMIT : o.args.price - LIMIT;
-    let side    = o.side == "BUY" ? "SELL" : "BUY";
+    let price           = o.side == "BUY" ? o.args.price + LIMIT : o.args.price - LIMIT;
+    let side            = o.side == "BUY" ? "SELL" : "BUY";
+    let place_order_res = { error: 1 };
     
-    while (true) {
+    while (place_order_res.error)
 
-        let place_order_res = await place_order(side, "exit", price);
+        place_order_res = await place_order(side, "exit", price);
 
-        if (!place_order_res.error)
+    let close_fn = async () => {
 
-            break;
+        let o = place_order_res.order;
+
+        if (o.status != "Filled" && o.status != "Cancelled") {
+
+            delete o.args.price; // correct?
+
+            o.args.type = "MKT";
+
+            let modify_order_res = { error: 1 };
+
+            while(modify_order_res.error)
+
+                modify_order_res = await modify_order(o);
+
+        }
 
     }
 
-    let handle = setTimeout(
-        async () => {
-
-            let o = place_order_res.order;
-
-            if (o.status != "Filled" && o.status != "Cancelled") {
-
-                delete o.args.price;
-
-                o.args.type = "MKT";
-
-                let market_order_res = { error: 1 };
-
-                while(market_order_res.error) {
-
-                    let modify_order_res = await modify_order(o);
-
-                }
-
-            }
-
-        }, 
-        TIMEOUT
-    );
+    let handle = setTimeout(close_fn, TIMEOUT);
 
 }
 
 
-function handle_order_msg(msg) {
+async function handle_order_msg(msg) {
 
     for (let args of msg.args) {
 
@@ -118,23 +110,41 @@ function handle_order_msg(msg) {
         let order_id    = args.orderId;
         let o           = ORDERS[order_id];
 
-        if (o) {
+        if (!o) 
 
-            o.status = status;
+            // external order
+        
+            return;
+        
+        let state = o.side == "BUY" ? STATES["BID_STATE"] : STATES["ASK_STATE"];
 
-            if (status == "Filled") {
+        switch(status) {
+
+            case "Filled":
 
                 delete ORDERS[order_id];
 
-                exit(o);    // await?
+                await exit(o);
 
-            } else if (status == "Cancelled") {
+                break;
+
+            case "Cancelled":
 
                 delete ORDERS[order_id];
 
-            }
+                break;
 
-            // need to handle bid/ask state
+            case "Submitted":
+
+                break;
+
+            case "PreSubmitted":
+
+                break;
+
+            default:
+
+                break;
 
         }
 
