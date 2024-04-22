@@ -124,13 +124,37 @@ async function handle_order_msg(msg) {
 
                 delete ORDERS[order_id];
 
-                await exit(o);
+                if (o.type == "quote") {
+
+                    STATES[state] = "exit";
+
+                    await exit(o);
+
+                } else {
+
+                    // exit order filled, requote
+
+                    let price = side == "BUY" ? L1_BID_PX - MAX_LEVEL : L1_ASK_PX + MAX_LEVEL;
+
+                    let place_order_res = { error: 1 };
+                    
+                    while (place_order_res.error)
+                    
+                        place_order_res = await place_order(o.side, "quote", l1, price);
+                    
+                    if (STATES[state]) // might have been toggled off
+                    
+                        STATES[state] = "active";
+
+                }
 
                 break;
 
             case "Cancelled":
 
                 delete ORDERS[order_id];
+
+                // need to requote?
 
                 break;
 
@@ -281,9 +305,9 @@ async function toggle_quote(str, key) {
             
             break;
 
-        case "closing":
+        case "exit":
 
-            // ???
+            STATES[state] = null;
 
             break;
 
@@ -302,15 +326,11 @@ async function quit() {
 
         if (o.type == "quote") {
 
-            while (true) {
+            let cancel_order_res = { error: 1 };
 
-                let cancel_order_res = await cancel_order(o);
+            while (cancel_order_res.error)
 
-                if (!cancel_order_res.error)
-
-                    break;
-
-            }
+                cancel_order_res = await cancel_order(o);
 
         } else if (o.type == "exit") {
 
@@ -498,6 +518,7 @@ const MIN_LEVEL     = parseInt(process.argv[4]) * TICK_SIZE;
 const MAX_LEVEL     = parseInt(process.argv[5]) * TICK_SIZE;
 const LIMIT         = parsetInt(process.argv[6]) * TICK_SIZE;
 const TIMEOUT       = parseInt(process.argv[7]);
+const COOLDOWN      = 5;
 const COL_WIDTH     = 15;
 const LOGGING       = false;
 const METRICS       = true;
@@ -519,11 +540,7 @@ setInterval(
 
         HEARTBEAT += 1;
 
-        if (HEARTBEAT > 11) {
-
-            //
-
-        }
+        if (HEARTBEAT > 11) quit();
 
     },
     1000
