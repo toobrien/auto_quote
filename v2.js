@@ -91,13 +91,11 @@ async function exit(o) {
 
                 o.args.type = "MKT";
 
-                while(true) {
+                let market_order_res = { error: 1 };
+
+                while(market_order_res.error) {
 
                     let modify_order_res = await modify_order(o);
-
-                    if (!modify_order_res.error)
-
-                        break;
 
                 }
 
