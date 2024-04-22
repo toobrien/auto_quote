@@ -65,6 +65,35 @@ function update_screen() {
 }
 
 
+async function update_quote(side, l1) {
+
+    for (let o of ORDERS) {
+
+        if (o.side == side && o.type == "quote") {
+
+            let level = Math.abs(o.args.price - l1);
+
+            if (level > MAX_OFFSET || level < MIN_OFFSET) {
+                
+                o.args.price = side == "BUY" ? L1_BID_PX - MAX_OFFSET : L1_ASK_PX + MAX_OFFSET;
+
+                let modify_order_res = { error: 1 };
+
+                while (modify_order_res.error)
+
+                    modify_order_res = await modify_order(o);
+
+                    // anything else?
+
+            }
+
+        }
+
+    }
+
+}
+
+
 async function exit(o) {
 
     let price           = o.side == "BUY" ? o.args.price + LIMIT : o.args.price - LIMIT;
@@ -134,7 +163,8 @@ async function handle_order_msg(msg) {
 
                     // exit order filled, requote
 
-                    let price = side == "BUY" ? L1_BID_PX - MAX_OFFSET : L1_ASK_PX + MAX_OFFSET;
+                    let side    = o.side == "BUY" ? "SELL" : "BUY";
+                    let price   = side == "BUY" ? L1_BID_PX - MAX_OFFSET : L1_ASK_PX + MAX_OFFSET;
 
                     let place_order_res = { error: 1 };
                     
@@ -142,7 +172,7 @@ async function handle_order_msg(msg) {
                     
                         place_order_res = await place_order(o.side, "quote", l1, price);
                     
-                    if (STATES[state]) // might have been toggled off
+                    if (STATES[state]) // preserve any toggle from exit
                     
                         STATES[state] = "active";
 
@@ -261,7 +291,7 @@ async function toggle_quote(str, key) {
         price   = L1_ASK_PX + MAX_OFFSET;
         state   = "ASK_STATE";
 
-    } else return;
+    } else return; // ???
 
     switch(state) {
 
@@ -452,35 +482,6 @@ async function cancel_order(o) {
     METRICS ? fs.writeFile(MET_FILE, `${format(t0, FMT)},cancel_order,${Date.now() - t0}\n`, { flag: "a+" }, (err) => {}) : null;
 
     return {};
-
-}
-
-
-async function update_quote(side, l1) {
-
-    for (let o of ORDERS) {
-
-        if (o.side == side && o.type == "quote") {
-
-            let level = Math.abs(o.args.price - l1);
-
-            if (level > MAX_OFFSET || level < MIN_OFFSET) {
-                
-                o.args.price = side == "BUY" ? L1_BID_PX - MAX_OFFSET : L1_ASK_PX + MAX_OFFSET;
-
-                let modify_order_res = await modify_order(o);
-
-                if (modify_order_res.error) {
-
-                    // ...
-
-                }
-
-            }
-
-        }
-
-    }
 
 }
 
