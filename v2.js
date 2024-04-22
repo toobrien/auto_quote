@@ -134,7 +134,7 @@ async function handle_order_msg(msg) {
 
                     // exit order filled, requote
 
-                    let price = side == "BUY" ? L1_BID_PX - MAX_LEVEL : L1_ASK_PX + MAX_LEVEL;
+                    let price = side == "BUY" ? L1_BID_PX - MAX_OFFSET : L1_ASK_PX + MAX_OFFSET;
 
                     let place_order_res = { error: 1 };
                     
@@ -252,13 +252,13 @@ async function toggle_quote(str, key) {
     if (key == "c") {
 
         side    = "BUY";
-        price   = L1_BID_PX - MAX_LEVEL;
+        price   = L1_BID_PX - MAX_OFFSET;
         state   = "BID_STATE"; 
 
     } else if (key == "d") {
 
         side    = "SELL";
-        price   = L1_ASK_PX + MAX_LEVEL;
+        price   = L1_ASK_PX + MAX_OFFSET;
         state   = "ASK_STATE";
 
     } else return;
@@ -464,9 +464,9 @@ async function update_quote(side, l1) {
 
             let level = Math.abs(o.args.price - l1);
 
-            if (level > MAX_LEVEL || level < MIN_LEVEL) {
+            if (level > MAX_OFFSET || level < MIN_OFFSET) {
                 
-                o.args.price = side == "BUY" ? L1_BID_PX - MAX_LEVEL : L1_ASK_PX + MAX_LEVEL;
+                o.args.price = side == "BUY" ? L1_BID_PX - MAX_OFFSET : L1_ASK_PX + MAX_OFFSET;
 
                 let modify_order_res = await modify_order(o);
 
@@ -514,11 +514,10 @@ const ACCOUNT_ID    = process.env.IBKR_ACCOUNT_ID;
 const CLIENT        = new base_client();
 const CONID         = parseInt(process.argv[2]);
 const TICK_SIZE     = parseFloat(process.argv[3]);
-const MIN_LEVEL     = parseInt(process.argv[4]) * TICK_SIZE;
-const MAX_LEVEL     = parseInt(process.argv[5]) * TICK_SIZE;
+const MIN_OFFSET     = parseInt(process.argv[4]) * TICK_SIZE;
+const MAX_OFFSET     = parseInt(process.argv[5]) * TICK_SIZE;
 const LIMIT         = parsetInt(process.argv[6]) * TICK_SIZE;
 const TIMEOUT       = parseInt(process.argv[7]);
-const COOLDOWN      = 5;
 const COL_WIDTH     = 15;
 const LOGGING       = false;
 const METRICS       = true;
