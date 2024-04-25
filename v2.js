@@ -137,7 +137,7 @@ async function handle_order_msg(msg) {
 
     for (let args of msg.args) {
 
-        DEBUG ? fs.writeFile(LOG_FILE, JSON.stringify(args), { flag: "a+" }, (err) => {}) : null;
+        LOGGING ? fs.writeFile(LOG_FILE, JSON.stringify(args), { flag: "a+" }, (err) => {}) : null;
 
         let status      = args.status;
         let order_id    = args.orderId;
