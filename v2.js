@@ -40,8 +40,8 @@ function update_screen() {
 
     process.stdout.cursorTo(0, 0);
 
-    process.stdout.write(`${"heartbeat:".padStart(COL_WIDTH)}${HEARTBEAT.padStart(COL_WIDTH)}\n`);
-    process.stdout.write(`${"l1:".padStart(COL_WIDTH)}${L1_BID_PX.padStart(COL_WIDTH)}${L1_ASK_PX.padStart(COL_WIDTH)}\n`);
+    process.stdout.write(`${"heartbeat:".padStart(COL_WIDTH)}${String(HEARTBEAT).padStart(COL_WIDTH)}\n`);
+    process.stdout.write(`${"l1:".padStart(COL_WIDTH)}${String(L1_BID_PX).padStart(COL_WIDTH)}${String(L1_ASK_PX).padStart(COL_WIDTH)}\n`);
 
     for (let o of ORDERS) {
 
