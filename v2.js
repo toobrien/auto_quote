@@ -298,13 +298,13 @@ async function toggle_quote(str, key) {
     let price   = null;
     let state   = null;
 
-    if (key == "c") {
+    if (key.name == "c") {
 
         side    = "BUY";
         price   = L1_BID_PX - MAX_OFFSET;
         state   = "BID_STATE"; 
 
-    } else if (key == "d") {
+    } else if (key.name == "d") {
 
         side    = "SELL";
         price   = L1_ASK_PX + MAX_OFFSET;
@@ -618,6 +618,8 @@ setInterval(
         if (HEARTBEAT > 11) 
         
             quit();
+
+        update_screen();
 
     },
     1000
