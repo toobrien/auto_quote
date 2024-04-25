@@ -43,7 +43,7 @@ function update_screen() {
     process.stdout.write(`${"heartbeat:".padStart(COL_WIDTH)}${String(HEARTBEAT).padStart(COL_WIDTH)}\n`);
     process.stdout.write(`${"l1:".padStart(COL_WIDTH)}${String(L1_BID_PX).padStart(COL_WIDTH)}${String(L1_ASK_PX).padStart(COL_WIDTH)}\n`);
 
-    for (let [ id, o ] of ORDERS.entries()) {
+    for (let [ id, o ] of Object.entries(ORDERS)) {
 
         let offset = o.side == "BUY" ? (L1_BID_PX - o.price) : o.price - L1_ASK_PX;
         
@@ -68,7 +68,7 @@ function update_screen() {
 
 async function update_quote(side, l1) {
 
-    for (let [ id, o ] of ORDERS.entries()) {
+    for (let [ id, o ] of Object.entries(ORDERS)) {
 
         if (o.side == side && o.type == "quote") {
 
@@ -328,7 +328,7 @@ async function toggle_quote(str, key) {
 
             let to_cancel = null; 
 
-            for (let [ id, o ]  of ORDERS.entries()) {
+            for (let [ id, o ]  of Object.entries(ORDERS)) {
 
                 if (o.side == side && o.type == "quote") {
 
@@ -371,7 +371,7 @@ async function toggle_quote(str, key) {
 
 async function quit() {
 
-    for (let [ id, o ] of ORDERS.entries()) {
+    for (let [ id, o ] of Object.entries(ORDERS)) {
 
         if (o.type == "quote") {
 
