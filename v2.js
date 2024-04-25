@@ -50,11 +50,11 @@ function update_screen() {
         offset /= TICK_SIZE;
         
         let fields = [
-            o.id.padString(COL_WIDTH),
-            o.side.padString(COL_WIDTH),
-            o.type.padString(COL_WIDTH),
-            o.status.padString(COL_WIDTH),
-            String(offset).padString(COL_WIDTH)
+            o.id.padStart(COL_WIDTH),
+            o.side.padStart(COL_WIDTH),
+            o.type.padStart(COL_WIDTH),
+            o.status.padStart(COL_WIDTH),
+            String(offset).padStart(COL_WIDTH)
         ];
         
         let line = `${fields[0]}${fields[1]}${fields[2]}${fields[3]}${fields[4]}${fields[5]}\n`;
