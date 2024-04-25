@@ -45,13 +45,14 @@ function update_screen() {
 
     for (let [ id, o ] of Object.entries(ORDERS)) {
 
-        let offset = o.side == "BUY" ? (L1_BID_PX - o.price) : o.price - L1_ASK_PX;
+        let offset = o.side == "BUY" ? (L1_BID_PX - o.args.price) : o.args.price - L1_ASK_PX;
         
         offset /= TICK_SIZE;
         
         let fields = [
             o.id.padStart(COL_WIDTH),
             o.side.padStart(COL_WIDTH),
+            String(o.args.price).padStart(COL_WIDTH),
             o.type.padStart(COL_WIDTH),
             o.status.padStart(COL_WIDTH),
             String(offset).padStart(COL_WIDTH)
@@ -159,7 +160,7 @@ async function handle_order_msg(msg) {
                 status:     status,
                 side:       o.side,
                 o_type:     o.type,
-                fill_px:    o.price    
+                fill_px:    o.args.price    
             };
 
             fs.writeFile(MET_FILE,`${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
@@ -209,10 +210,14 @@ async function handle_order_msg(msg) {
 
             case "Submitted":
 
+                o.status = status;
+
                 break;
 
             case "PreSubmitted":
 
+                o.status = status;
+                
                 break;
 
             default:
@@ -478,7 +483,7 @@ async function place_order(
             id:     o.id,
             side:   o.side,
             type:   o.type,
-            price:  o.price,
+            price:  o.args.price,
             ms:     Date.now() - t0
         };
 
@@ -513,7 +518,7 @@ async function modify_order(o) {
             id:     o.id,
             side:   o.side,
             type:   o.type,
-            price:  o.price,
+            price:  o.args.price,
             ms:     Date.now() - t0
         };
 
@@ -547,7 +552,7 @@ async function cancel_order(o) {
             id:     o.id,
             side:   o.side,
             type:   o.type,
-            price:  o.price,
+            price:  o.args.price,
             ms: Date.now() - t0
         };
 
