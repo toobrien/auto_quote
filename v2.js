@@ -5,7 +5,7 @@ const fs                    = require("node:fs");
 const IN_MAP                = {};
 
 
-// node v1.js 637533450 0.25 6 10 5 10000
+// node v2.js 637533450 0.25 6 10 5 10000
 
 
 // order
