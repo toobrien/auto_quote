@@ -104,11 +104,14 @@ async function exit(o) {
 
         place_order_res = await place_order(side, "exit", price);
 
-    let close_fn = async () => {
+    let mkt_out = async () => {
 
-        let o = place_order_res.order;
+        let oid = place_order_res.order.id;
+        let o   = ORDERS[oid];
 
-        if (o.status != "Filled" && o.status != "Cancelled") {
+        if (o) {
+
+            // if !o, order was filled or cancelled already
 
             delete o.args.price; // correct?
 
@@ -124,7 +127,7 @@ async function exit(o) {
 
     }
 
-    let handle = setTimeout(close_fn, TIMEOUT);
+    let handle = setTimeout(mkt_out, TIMEOUT);
 
 }
 
@@ -174,9 +177,9 @@ async function handle_order_msg(msg) {
 
                     await exit(o);
 
-                } else {
+                } else if (o.type == "exit") {
 
-                    // exit order filled, requote
+                    // requote
 
                     let side    = o.side == "BUY" ? "SELL" : "BUY";
                     let price   = side == "BUY" ? L1_BID_PX - MAX_OFFSET : L1_ASK_PX + MAX_OFFSET;
@@ -199,7 +202,7 @@ async function handle_order_msg(msg) {
 
                 delete ORDERS[order_id];
 
-                // need to requote?
+                // need to requote or re-exit?
 
                 break;
 
