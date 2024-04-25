@@ -147,6 +147,21 @@ async function handle_order_msg(msg) {
         
         let state = o.side == "BUY" ? STATES["BID_STATE"] : STATES["ASK_STATE"];
 
+        if (METRICS) {
+
+            let log_msg = {
+                ts:         format(Date.now(), FMT),
+                fn:         "handle_order_msg",
+                status:     status,
+                side:       o.side,
+                o_type:     o.type,
+                fill_px:    o.price    
+            };
+
+            fs.writeFile(MET_FILE,`${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
+
+        }
+
         switch(status) {
 
             case "Filled":
@@ -389,7 +404,17 @@ async function ack_order(place_order_res) {
 
     }
 
-    METRICS ? fs.writeFile(MET_FILE, `${format(t0, FMT)},ack_order,${Date.now() - t0}\n`, { flag: "a+" }, (err) => {}) : null;
+    if (METRICS) {
+
+        let log_msg = {
+            ts:     format(t0, FMT),
+            fn:     ack_order,
+            ms:     Date.now() - t0
+        };
+
+        fs.writeFile(MET_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
+
+    }
 
     return res;
 
@@ -441,7 +466,22 @@ async function place_order(
     let o       = new order(id, side, type, args.orders[0]);
     ORDERS[id]  = o;
 
-    METRICS ? fs.writeFile(MET_FILE, `${format(t0, FMT)},place_order,${Date.now() - t0}\n`, { flag: "a+" }, (err) => {}) : null;
+    if (METRICS) {
+
+        let log_msg = {
+            ts:     format(t0, FMT),
+            fn:     "place_order",
+            id:     o.id,
+            side:   o.side,
+            type:   o.type,
+            price:  o.price,
+            ms:     Date.now() - t0
+        };
+
+        fs.writeFile(MET_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
+
+    }
+
 
     return { order: o };
 
@@ -461,7 +501,21 @@ async function modify_order(o) {
 
     }
 
-    METRICS ? fs.writeFile(MET_FILE, `${format(t0, FMT)},modify_order,${Date.now() - t0}\n`, { flag: "a+" }, (err) => {}) : null;
+    if (METRICS) {
+
+        let log_msg = {
+            ts:     format(t0, FMT),
+            fn:     "modify_order",
+            id:     o.id,
+            side:   o.side,
+            type:   o.type,
+            price:  o.price,
+            ms:     Date.now() - t0
+        };
+
+        fs.writeFile(MET_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
+
+    }
 
     return {};
 
@@ -481,7 +535,21 @@ async function cancel_order(o) {
 
     }
 
-    METRICS ? fs.writeFile(MET_FILE, `${format(t0, FMT)},cancel_order,${Date.now() - t0}\n`, { flag: "a+" }, (err) => {}) : null;
+    if (METRICS) {
+
+        let log_msg = {
+            ts:     format(t0, FMT),
+            fn:     "cancel_order",
+            id:     o.id,
+            side:   o.side,
+            type:   o.type,
+            price:  o.price,
+            ms: Date.now() - t0
+        };
+
+        fs.writeFile(MET_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
+
+    }
 
     return {};
 
@@ -523,6 +591,8 @@ const TIMEOUT       = parseInt(process.argv[7]);
 const COL_WIDTH     = 15;
 const LOGGING       = false;
 const METRICS       = true;
+const LOG_FLAG      = { flag: "a+" };
+const LOG_ERR       = (err) => {};
 const LOG_FILE      = "./log.txt";
 const MET_FILE      = "./metrics.csv";
 const STATES        = { "BID_STATE": null, "ASK_STATE": null };
