@@ -18,7 +18,7 @@ class order {
         this.id     = id;
         this.side   = side;
         this.type   = type;
-        this.status = null;
+        this.status = "null";
         this.args   = args;
 
     }
