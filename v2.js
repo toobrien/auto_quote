@@ -312,7 +312,7 @@ async function toggle_quote(str, key) {
 
     } else return; // ???
 
-    switch(state) {
+    switch(STATES[state]) {
 
         case null:
 
