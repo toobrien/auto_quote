@@ -603,7 +603,7 @@ const METRICS       = true;
 const LOG_FLAG      = { flag: "a+" };
 const LOG_ERR       = (err) => {};
 const LOG_FILE      = "./log.txt";
-const MET_FILE      = "./metrics.csv";
+const MET_FILE      = "./metrics.json";
 const STATES        = { "BID_STATE": null, "ASK_STATE": null };
 const ORDERS        = {};          
 
