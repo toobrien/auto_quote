@@ -614,7 +614,9 @@ setInterval(
 
         HEARTBEAT += 1;
 
-        if (HEARTBEAT > 11) quit();
+        if (HEARTBEAT > 11) 
+        
+            quit();
 
     },
     1000
