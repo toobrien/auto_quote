@@ -160,7 +160,7 @@ async function handle_order_msg(msg) {
                 status:     status,
                 side:       o.side,
                 o_type:     o.type,
-                fill_px:    o.args.price    
+                price:      o.args.price    
             };
 
             fs.writeFile(MET_FILE,`${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
@@ -217,7 +217,7 @@ async function handle_order_msg(msg) {
             case "PreSubmitted":
 
                 o.status = status;
-                
+
                 break;
 
             default:
@@ -417,7 +417,7 @@ async function ack_order(place_order_res) {
 
         let log_msg = {
             ts:     format(t0, FMT),
-            fn:     ack_order,
+            fn:     "ack_order",
             ms:     Date.now() - t0
         };
 
