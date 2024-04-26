@@ -351,7 +351,7 @@ async function toggle_quote(str, key) {
 
                 while (cancel_order_res.error)
 
-                    cancel_order_res = await cancel_order();
+                    cancel_order_res = await cancel_order(o);
             
             }
 
