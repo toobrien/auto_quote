@@ -124,8 +124,6 @@ async function exit(o) {
             let place_order_res = { error: 1 };
 
             while (place_order_res.error)
-            
-                // can i access side and price here?
 
                 place_order_res = await place_order(side, "exit", price, false);
 
@@ -194,7 +192,7 @@ async function handle_order_msg(msg) {
                     
                     while (place_order_res.error)
                     
-                        place_order_res = await place_order(o.side, "quote", price, true);
+                        place_order_res = await place_order(side, "quote", price, true);
                     
                     if (STATES[state]) // preserve any toggle from exit
                     
@@ -214,17 +212,23 @@ async function handle_order_msg(msg) {
 
             case "Submitted":
 
-                o.status = status;
-
-                break;
+                ;
 
             case "PreSubmitted":
 
-                o.status = status;
+                ;
 
-                break;
+            case "PendingSubmit":
+
+                ;
+
+            case "PendingCancel":
+
+                ;
 
             default:
+
+                o.status = status;
 
                 break;
 
