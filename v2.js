@@ -509,7 +509,7 @@ async function modify_order(o) {
 
     if (modify_order_res.error) {
 
-        fs.writeFile(LOG_FILE, `${Date.now()},ERROR,modfiy_order,${modify_order_res.error}\n`, { flag: "a+" }, (err) => {});
+        fs.writeFile(LOG_FILE, `${format(Date.now(), FMT)},ERROR,modfiy_order,${modify_order_res.error}\n`, { flag: "a+" }, (err) => {});
 
         return modify_order_res;
 
