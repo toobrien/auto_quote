@@ -194,7 +194,7 @@ async function handle_order_msg(msg) {
                     
                     while (place_order_res.error)
                     
-                        place_order_res = await place_order(o.side, "quote", l1, price, true);
+                        place_order_res = await place_order(o.side, "quote", price, true);
                     
                     if (STATES[state]) // preserve any toggle from exit
                     
