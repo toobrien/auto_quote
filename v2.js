@@ -138,7 +138,7 @@ async function handle_order_msg(msg) {
 
     for (let args of msg.args) {
 
-        LOGGING ? fs.writeFile(LOG_FILE, JSON.stringify(args), { flag: "a+" }, (err) => {}) : null;
+        // fs.writeFile(LOG_FILE, JSON.stringify(args), { flag: "a+" }, (err) => {});
 
         let status      = args.status;
         let order_id    = args.orderId;
@@ -455,7 +455,7 @@ async function place_order(
 
     if (place_order_res.error) {
 
-        fs.writeFile(LOG_FILE, `${Date.now()},ERROR,place_order,${place_order_res.error}\n`, { flag: "a+" }, (err) => {})
+        fs.writeFile(LOG_FILE, `${format(Date.now(), FMT)},ERROR,place_order,${place_order_res.error}\n`, { flag: "a+" }, (err) => {})
 
         return place_order_res;
 
@@ -465,7 +465,7 @@ async function place_order(
 
     if (ack_bracket_order_res.error) {
 
-        fs.writeFile(LOG_FILE, `${Date.now()},ERROR,reply,${ack_bracket_order_res.error}\n`, { flag: "a+" }, (err) => {});
+        fs.writeFile(LOG_FILE, `${format(Date.now(), FMT)},ERROR,reply,${ack_bracket_order_res.error}\n`, { flag: "a+" }, (err) => {});
 
         return ack_bracket_order_res;
     
@@ -538,7 +538,7 @@ async function cancel_order(o) {
 
     if (cancel_order_res.error) {
 
-        fs.writeFile(LOG_FILE, `${Date.now()},ERROR,cancel_order,${cancel_order_res.error}\n`, { flag: "a+" }, (err) => {});
+        fs.writeFile(LOG_FILE, `${format(Date.now(), FMT)},ERROR,cancel_order,${cancel_order_res.error}\n`, { flag: "a+" }, (err) => {});
 
         return cancel_order_res;
 
@@ -598,7 +598,6 @@ const MAX_OFFSET    = parseInt(process.argv[5]) * TICK_SIZE;
 const LIMIT         = parseInt(process.argv[6]) * TICK_SIZE;
 const TIMEOUT       = parseInt(process.argv[7]);
 const COL_WIDTH     = 15;
-const LOGGING       = false;
 const METRICS       = true;
 const LOG_FLAG      = { flag: "a+" };
 const LOG_ERR       = (err) => {};
