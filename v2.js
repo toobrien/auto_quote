@@ -5,7 +5,7 @@ const fs                    = require("node:fs");
 const IN_MAP                = {};
 
 
-// node v2.js 620731036 0.25 6 10 5 10000
+// node v2.js 620731036 0.25 6 10 5 9500
 
 
 // order
@@ -104,7 +104,7 @@ async function exit(o) {
     
     while (place_order_res.error)
 
-        place_order_res = await place_order(side, "exit", price);
+        place_order_res = await place_order(side, "exit", price, true);
 
     let mkt_out = async () => {
 
@@ -115,15 +115,19 @@ async function exit(o) {
 
             // if !o, order was filled or cancelled already
 
-            delete o.args.price; // correct?
+            let cancel_order_res = { error: 1 };
 
-            o.args.type = "MKT";
+            while (cancel_order_res.error)
 
-            let modify_order_res = { error: 1 };
+                cancel_order_res = await cancel_order(o);
 
-            while(modify_order_res.error)
+            let place_order_res = { error: 1 };
 
-                modify_order_res = await modify_order(o);
+            while (place_order_res.error)
+            
+                // can i access side and price here?
+
+                place_order_res = await place_order(side, "exit", price, false);
 
         }
 
@@ -190,7 +194,7 @@ async function handle_order_msg(msg) {
                     
                     while (place_order_res.error)
                     
-                        place_order_res = await place_order(o.side, "quote", l1, price);
+                        place_order_res = await place_order(o.side, "quote", l1, price, true);
                     
                     if (STATES[state]) // preserve any toggle from exit
                     
@@ -321,7 +325,7 @@ async function toggle_quote(str, key) {
 
         case null:
 
-            let place_order_res = await place_order(side, "quote", price);
+            let place_order_res = await place_order(side, "quote", price, true);
 
             if (!place_order_res.error)
 
@@ -433,7 +437,8 @@ async function ack_order(place_order_res) {
 async function place_order(
     side,
     type,
-    price
+    price,
+    limit,
 ) {
 
     let t0      = Date.now();
@@ -442,7 +447,7 @@ async function place_order(
             {
                 acctId:     ACCOUNT_ID,
                 conid:      CONID,
-                orderType:  "LMT",
+                orderType:  limit ? "LMT" : "MKT",
                 price:      price,
                 side:       side,
                 tif:        "GTC",
