@@ -18,7 +18,7 @@ class order {
         this.id     = id;
         this.side   = side;
         this.type   = type;
-        this.status = "null";
+        this.status = null;
         this.args   = args;
 
     }
@@ -54,7 +54,7 @@ function update_screen() {
             o.side.padStart(COL_WIDTH),
             String(o.args.price).padStart(COL_WIDTH),
             o.type.padStart(COL_WIDTH),
-            o.status.padStart(COL_WIDTH),
+            String(o.status).padStart(COL_WIDTH),
             String(offset).padStart(COL_WIDTH)
         ];
         
