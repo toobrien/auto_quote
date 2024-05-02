@@ -5,7 +5,7 @@ const fs                    = require("node:fs");
 const IN_MAP                = {};
 
 
-// node v2.js 620731036 0.25 6 10 5 9500
+// node v2.js 620731036 0.25 6 8 5 10000
 
 
 // order
@@ -71,21 +71,23 @@ async function update_quote(side, l1) {
 
     for (let [ id, o ] of Object.entries(ORDERS)) {
 
-        if (o.side == side && o.type == "quote") {
+        if (
+            STATES[o.side]  == "active" &&
+            o.side          == side && 
+            o.type          == "quote"
+        ) {
 
             let level = Math.abs(o.args.price - l1);
 
             if (level > MAX_OFFSET || level < MIN_OFFSET) {
                 
-                o.args.price = side == "BUY" ? L1_BID_PX - MAX_OFFSET : L1_ASK_PX + MAX_OFFSET;
+                o.args.price = side == "BUY" ? l1 - MAX_OFFSET : l1 + MAX_OFFSET;
 
                 let modify_order_res = { error: 1 };
 
                 while (modify_order_res.error)
 
                     modify_order_res = await modify_order(o);
-
-                    // anything else?
 
             }
 
@@ -98,6 +100,7 @@ async function update_quote(side, l1) {
 
 async function exit(o) {
 
+    let t0              = Date.now();
     let price           = o.side == "BUY" ? o.args.price + LIMIT : o.args.price - LIMIT;
     let side            = o.side == "BUY" ? "SELL" : "BUY";
     let place_order_res = { error: 1 };
@@ -131,7 +134,8 @@ async function exit(o) {
 
     }
 
-    let handle = setTimeout(mkt_out, TIMEOUT);
+    let elapsed = Date.now() - t0;
+    let handle  = setTimeout(mkt_out, TIMEOUT - elapsed);
 
 }
 
@@ -178,6 +182,10 @@ async function handle_order_msg(msg) {
                 if (o.type == "quote") {
 
                     STATES[state] = "exit";
+
+                    // TODO set actual fill price so exit is placed properly in case
+                    // modify order was interrupted
+                    // o.args.price = ???;
 
                     await exit(o);
 
@@ -597,7 +605,7 @@ IN_MAP["d"]         = toggle_quote;
 IN_MAP["c"]         = toggle_quote;
 IN_MAP["q"]         = quit;
 
-const FMT           = "yyyy-MM-dd'T'HH:mm:ss.T";
+const FMT           = "yyyy-MM-dd'T'HH:mm:ss.SSS";
 const ACCOUNT_ID    = process.env.IBKR_ACCOUNT_ID;
 const CLIENT        = new base_client();
 const CONID         = parseInt(process.argv[2]);
