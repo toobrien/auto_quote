@@ -71,8 +71,10 @@ async function update_quote(side, l1) {
 
     for (let [ id, o ] of Object.entries(ORDERS)) {
 
+        let state = o.side == "BUY" ? "BID_STATE" : "ASK_STATE";
+
         if (
-            STATES[o.side]  == "active" &&
+            STATES[state]   == "active" &&
             o.side          == side && 
             o.type          == "quote"
         ) {
@@ -156,7 +158,7 @@ async function handle_order_msg(msg) {
         
             return;
         
-        let state = o.side == "BUY" ? STATES["BID_STATE"] : STATES["ASK_STATE"];
+        let state = o.side == "BUY" ? "BID_STATE" : "ASK_STATE";
 
         if (METRICS) {
 
@@ -621,7 +623,7 @@ const LOG_FLAG      = { flag: "a+" };
 const LOG_ERR       = (err) => {};
 const LOG_FILE      = "./log.txt";
 const MET_FILE      = "./metrics.json";
-const STATES        = { "BUY": null, "SELL": null };
+const STATES        = { "BID_STATE": null, "ASK_STATE": null };
 const ORDERS        = {};          
 
 let HEARTBEAT       = 0;
