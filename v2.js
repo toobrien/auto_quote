@@ -183,8 +183,7 @@ async function handle_order_msg(msg) {
 
                     STATES[state] = "exit";
 
-                    // TODO set actual fill price so exit is placed properly in case
-                    // modify order was interrupted
+                    // TODO set actual fill price so exit is placed properly in case modify order was interrupted
                     // o.args.price = ???;
 
                     await exit(o);
@@ -202,7 +201,9 @@ async function handle_order_msg(msg) {
                     
                         place_order_res = await place_order(side, "quote", price, true);
                     
-                    if (STATES[state]) // preserve any toggle from exit
+                    if (STATES[state]) 
+                    
+                        // preserve any toggle from exit
                     
                         STATES[state] = "active";
 
@@ -404,7 +405,7 @@ async function quit() {
 
         } else if (o.type == "exit") {
 
-            // leave closing order?
+            // leave closing order
 
         }
 
@@ -620,7 +621,7 @@ const LOG_FLAG      = { flag: "a+" };
 const LOG_ERR       = (err) => {};
 const LOG_FILE      = "./log.txt";
 const MET_FILE      = "./metrics.json";
-const STATES        = { "BID_STATE": null, "ASK_STATE": null };
+const STATES        = { "BUY": null, "SELL": null };
 const ORDERS        = {};          
 
 let HEARTBEAT       = 0;
