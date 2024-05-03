@@ -103,7 +103,7 @@ async function update_quote(side, l1) {
 async function exit(o) {
 
     let t0              = Date.now();
-    let price           = o.side == "BUY" ? o.args.price + LIMIT : o.args.price - LIMIT;
+    let price           = o.side == "BUY" ? o.fill_px + LIMIT : o.fill_px - LIMIT;
     let side            = o.side == "BUY" ? "SELL" : "BUY";
     let place_order_res = { error: 1 };
     
@@ -146,7 +146,7 @@ async function handle_order_msg(msg) {
 
     for (let args of msg.args) {
 
-        // fs.writeFile(LOG_FILE, JSON.stringify(args), { flag: "a+" }, (err) => {});
+        //fs.writeFile(LOG_FILE, `${JSON.stringify(args)}\n`, { flag: "a+" }, (err) => {});
 
         let status      = args.status;
         let order_id    = args.orderId;
@@ -157,8 +157,6 @@ async function handle_order_msg(msg) {
             // external order
         
             return;
-        
-        let state = o.side == "BUY" ? "BID_STATE" : "ASK_STATE";
 
         if (METRICS) {
 
@@ -178,15 +176,14 @@ async function handle_order_msg(msg) {
         switch(status) {
 
             case "Filled":
-
+                
                 delete ORDERS[order_id];
 
                 if (o.type == "quote") {
 
-                    STATES[state] = "exit";
-
-                    // TODO set actual fill price so exit is placed properly in case modify order was interrupted
-                    // o.args.price = ???;
+                    let state       = o.side == "BUY" ? "BID_STATE" : "ASK_STATE";
+                    o.fill_px       = parseFloat(msg.avgPrice);
+                    STATES[state]   = "exit";
 
                     await exit(o);
 
@@ -194,18 +191,18 @@ async function handle_order_msg(msg) {
 
                     // requote
 
-                    let side    = o.side == "BUY" ? "SELL" : "BUY";
-                    let price   = side == "BUY" ? L1_BID_PX - MAX_OFFSET : L1_ASK_PX + MAX_OFFSET;
-
+                    let state           = o.side    == "BUY" ? "ASK_STATE" : "BID_STATE";
+                    let side            = o.side    == "BUY" ? "SELL" : "BUY";
+                    let price           = side      == "BUY" ? L1_BID_PX - MAX_OFFSET : L1_ASK_PX + MAX_OFFSET;
                     let place_order_res = { error: 1 };
                     
                     while (place_order_res.error)
                     
                         place_order_res = await place_order(side, "quote", price, true);
                     
-                    if (STATES[state]) 
+                    if (STATES[state])
                     
-                        // preserve any toggle from exit
+                        // preserve any toggle off during exit
                     
                         STATES[state] = "active";
 
@@ -239,11 +236,11 @@ async function handle_order_msg(msg) {
 
             default:
 
-                o.status = status;
-
                 break;
 
         }
+
+        o.status = status;
 
     }
 
@@ -370,7 +367,7 @@ async function toggle_quote(str, key) {
 
                 while (cancel_order_res.error)
 
-                    cancel_order_res = await cancel_order(o);
+                    cancel_order_res = await cancel_order(to_cancel);
             
             }
 
