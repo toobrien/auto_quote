@@ -390,7 +390,7 @@ async function toggle_quote(str, key) {
 }
 
 
-async function quit() {
+async function clear_quotes() {
 
     for (let [ id, o ] of Object.entries(ORDERS)) {
 
@@ -402,14 +402,16 @@ async function quit() {
 
                 cancel_order_res = await cancel_order(o);
 
-        } else if (o.type == "exit") {
-
-            // leave closing order
-
         }
 
     }
 
+}
+
+async function quit() {
+
+    await clear_quotes();
+    
     process.exit();
 
 }
@@ -472,7 +474,7 @@ async function place_order(
 
     if (place_order_res.error) {
 
-        fs.writeFile(LOG_FILE, `${format(Date.now(), FMT)},ERROR,place_order,${place_order_res.error}\n`, { flag: "a+" }, (err) => {})
+        fs.writeFile(LOG_FILE, `${format(Date.now(), FMT)},ERROR,place_order,${place_order_res.error}\n`, { flag: "a+" }, (err) => {});
 
         return place_order_res;
 
@@ -624,6 +626,7 @@ const STATES        = { "BID_STATE": null, "ASK_STATE": null };
 const ORDERS        = {};          
 
 let HEARTBEAT       = 0;
+let LAGGED          = false;
 let L1_BID_PX       = null;
 let L1_ASK_PX       = null;
 
@@ -632,13 +635,45 @@ CLIENT.sub_market_data([ CONID ], [ mdf.bid, mdf.ask ]);
 CLIENT.sub_order_updates();
 
 setInterval(
-    () => { 
+    async () => { 
 
         HEARTBEAT += 1;
 
-        if (HEARTBEAT > 11) 
+        if (HEARTBEAT > 11) {
         
-            quit();
+            LAGGED = true;
+
+            fs.writeFile(LOG_FILE, `${format(Date.now(), FMT)},INFO,setInterval,hb late\n`, { flag: "a+" }, (err) => {});
+
+            await clear_quotes();
+
+        } else if (LAGGED) {
+
+            LAGGED = false;
+
+            fs.writeFile(LOG_FILE, `${format(Date.now(), FMT)},INFO,setInterval,hb ok\n`, { flag: "a+" }, (err) => {});
+
+            if (STATES.BID_STATE == "active") {
+
+                let place_order_res = { error: 1 };
+
+                while (place_order_res.error)
+
+                    place_order_res = await place_order("BUY", "quote", L1_BID_PX - MAX_OFFSET, true);
+
+            }
+
+            if (STATES.ASK_STATE == "active") {
+
+                let place_order_res = { error: 1 };
+
+                while (place_order_res.error)
+
+                    place_order_res = await place_order("SELL", "quote", L1_ASK_PX + MAX_OFFSET, true);
+
+            }
+
+        }
 
         update_screen();
 
