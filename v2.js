@@ -130,7 +130,7 @@ async function exit(o) {
 
             while (place_order_res.error)
 
-                place_order_res = await place_order(side, "exit", price, false);
+                place_order_res = await place_order(side, "exit", null, false);
 
         }
 
@@ -166,8 +166,12 @@ async function handle_order_msg(msg) {
                 status:     status,
                 side:       o.side,
                 o_type:     o.type,
-                price:      o.args.price    
+                price:      o.args.price
             };
+
+            if (status == "Filled")
+
+                log_msg.fill_px = args.avgPrice;
 
             fs.writeFile(MET_FILE,`${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
 
@@ -182,7 +186,7 @@ async function handle_order_msg(msg) {
                 if (o.type == "quote") {
 
                     let state       = o.side == "BUY" ? "BID_STATE" : "ASK_STATE";
-                    o.fill_px       = parseFloat(msg.avgPrice);
+                    o.fill_px       = parseFloat(args.avgPrice);
                     STATES[state]   = "exit";
 
                     await exit(o);
@@ -461,14 +465,23 @@ async function place_order(
             {
                 acctId:     ACCOUNT_ID,
                 conid:      CONID,
-                orderType:  limit ? "LMT" : "MKT",
-                price:      price,
                 side:       side,
                 tif:        "GTC",
                 quantity:   1
             }
         ]
     };
+
+    if (limit) {
+
+        args.orders[0].price        = price;
+        args.orders[0].orderType    = "LMT";
+
+    } else {
+
+        args.orders[0].orderType = "MKT";
+
+    }
 
     let place_order_res = await CLIENT.place_order(ACCOUNT_ID, args);
 
@@ -503,13 +516,13 @@ async function place_order(
             side:   o.side,
             type:   o.type,
             price:  o.args.price,
+            limit:  limit,
             ms:     Date.now() - t0
         };
 
         fs.writeFile(MET_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
 
     }
-
 
     return { order: o };
 
