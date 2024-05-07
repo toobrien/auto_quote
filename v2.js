@@ -102,9 +102,12 @@ async function update_quote(side, l1) {
 
 async function exit(o) {
 
+    
+    
+    /*
     let t0              = Date.now();
-    let price           = o.side == "BUY" ? o.fill_px + LIMIT : o.fill_px - LIMIT;
     let side            = o.side == "BUY" ? "SELL" : "BUY";
+    let price           = o.side == "BUY" ? o.fill_px + LIMIT : o.fill_px - LIMIT;
     let place_order_res = { error: 1 };
     
     while (place_order_res.error)
@@ -138,6 +141,21 @@ async function exit(o) {
 
     let elapsed = Date.now() - t0;
     let handle  = setTimeout(mkt_out, TIMEOUT - elapsed);
+    */
+
+    let side = o.side == "BUY" ? "SELL" : "BUY";
+
+    let mkt_out = async() => {
+
+        let place_order_res = { error: 1 };
+
+        while (place_order_res.error)
+
+            place_order_res = await place_order(side, "exit", null, false);
+
+    }
+
+    let handle = setTimeout(mkt_out, TIMEOUT);
 
 }
 
