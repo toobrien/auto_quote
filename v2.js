@@ -521,7 +521,7 @@ async function place_order(
 
     if (ack_bracket_order_res.error) {
 
-        fs.writeFile(LOG_FILE, `${format(Date.now(), FMT)},ERROR,reply,${ack_bracket_order_res.error}\n`, { flag: "a+" }, (err) => {});
+        fs.writeFile(LOG_FILE, `${format(Date.now(), FMT)},ERROR,ack_order,${ack_bracket_order_res.error}\n`, { flag: "a+" }, (err) => {});
 
         return ack_bracket_order_res;
     
