@@ -102,8 +102,6 @@ async function update_quote(side, l1) {
 
 async function exit(o) {
 
-    
-    
     /*
     let t0              = Date.now();
     let side            = o.side == "BUY" ? "SELL" : "BUY";
@@ -199,7 +197,9 @@ async function handle_order_msg(msg) {
 
             case "Filled":
                 
-                delete ORDERS[order_id];
+                if (ORDERS[order_id])
+                
+                    delete ORDERS[order_id];
 
                 if (o.type == "quote") {
 
@@ -234,7 +234,9 @@ async function handle_order_msg(msg) {
 
             case "Cancelled":
 
-                delete ORDERS[order_id];
+                if (ORDERS[order_id])
+
+                    delete ORDERS[order_id];
 
                 // need to requote or re-exit?
 
@@ -424,6 +426,10 @@ async function clear_quotes() {
 
                 cancel_order_res = await cancel_order(o);
 
+            if (ORDERS[o.id])
+
+                delete ORDERS[o.id];
+
         }
 
     }
@@ -497,7 +503,7 @@ async function place_order(
 
     } else {
 
-        args.orders[0].orderType = "MKT";
+        args.orders[0].orderType    = "MKT";
 
     }
 
