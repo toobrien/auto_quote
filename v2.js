@@ -447,17 +447,10 @@ async function quit() {
 
 async function ack_order(place_order_res) {
     
-    let t0          = Date.now();
-    let res         = {};
-    let message_id  = place_order_res[0].id;
-
-    while (!res.error) {
-
-        res = await CLIENT.reply(message_id);
-            
-        if (res[0]) break;
-
-    }
+    let t0              = Date.now();
+    let res             = {};
+    let message_id      = place_order_res[0].id;
+    let ack_order_res   = res = await CLIENT.reply(message_id);
 
     if (METRICS) {
 
@@ -517,13 +510,13 @@ async function place_order(
 
     }
 
-    let ack_bracket_order_res = await ack_order(place_order_res);
+    let ack_order_res = await ack_order(place_order_res);
 
-    if (ack_bracket_order_res.error) {
+    if (ack_order_res.error) {
 
         fs.writeFile(LOG_FILE, `${format(Date.now(), FMT)},ERROR,ack_order,${ack_bracket_order_res.error}\n`, { flag: "a+" }, (err) => {});
 
-        return ack_bracket_order_res;
+        return ack_order_res;
     
     }
 
@@ -664,6 +657,7 @@ const ORDERS        = {};
 
 let HEARTBEAT       = 0;
 let LAGGED          = false;
+let QUOTES_CLEARED  = false;
 let L1_BID_PX       = null;
 let L1_ASK_PX       = null;
 
@@ -682,9 +676,13 @@ setInterval(
 
             fs.writeFile(LOG_FILE, `${format(Date.now(), FMT)},INFO,setInterval,hb late\n`, { flag: "a+" }, (err) => {});
 
+            QUOTES_CLEARED = false;
+            
             await clear_quotes();
 
-        } else if (LAGGED) {
+            QUOTES_CLEARED = true;
+
+        } else if (HEARTBEAT <= 11 && LAGGED && QUOTES_CLEARED) {
 
             LAGGED = false;
 
