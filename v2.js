@@ -464,7 +464,7 @@ async function ack_order(place_order_res) {
 
     }
 
-    return res;
+    return ack_order_res;
 
 }
 
@@ -677,7 +677,7 @@ setInterval(
             fs.writeFile(LOG_FILE, `${format(Date.now(), FMT)},INFO,setInterval,hb late\n`, { flag: "a+" }, (err) => {});
 
             QUOTES_CLEARED = false;
-            
+
             await clear_quotes();
 
             QUOTES_CLEARED = true;
