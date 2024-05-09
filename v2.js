@@ -670,7 +670,7 @@ setInterval(
 
         HEARTBEAT += 1;
 
-        if (HEARTBEAT > 11) {
+        if (HEARTBEAT > 11 && !LAGGED) {
         
             LAGGED = true;
 
