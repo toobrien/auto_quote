@@ -514,13 +514,13 @@ async function place_order(
 
     if (ack_order_res.error) {
 
-        fs.writeFile(LOG_FILE, `${format(Date.now(), FMT)},ERROR,ack_order,${ack_bracket_order_res.error}\n`, { flag: "a+" }, (err) => {});
+        fs.writeFile(LOG_FILE, `${format(Date.now(), FMT)},ERROR,ack_order,${ack_order_res.error}\n`, { flag: "a+" }, (err) => {});
 
         return ack_order_res;
     
     }
 
-    let id      = ack_bracket_order_res[0].order_id;
+    let id      = ack_order_res[0].order_id;
     let o       = new order(id, side, type, args.orders[0]);
     ORDERS[id]  = o;
 
