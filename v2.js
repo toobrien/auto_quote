@@ -171,6 +171,7 @@ async function handle_order_msg(msg) {
         if (!o) 
 
             // external order
+            // TODO: but what if IBKR cancels and replaces?
         
             return;
 
@@ -178,19 +179,16 @@ async function handle_order_msg(msg) {
 
             let log_msg = {
                 ts:         format(Date.now(), FMT),
+                lvl:        "INFO",
                 fn:         "handle_order_msg",
-                id:         order_id,
-                status:     status,
-                side:       o.side,
-                o_type:     o.type,
-                price:      o.args.price
+                order:      o
             };
 
             if (status == "Filled")
 
-                log_msg.fill_px = args.avgPrice;
+                log_msg.order.fill_px = args.avgPrice;
 
-            fs.writeFile(MET_FILE,`${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
+            fs.writeFile(LOG_FILE,`${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
 
         }
 
@@ -457,11 +455,13 @@ async function ack_order(place_order_res) {
 
         let log_msg = {
             ts:     format(t0, FMT),
+            lvl:    "INFO",
             fn:     "ack_order",
+            msg:    ack_order_res,
             ms:     Date.now() - t0
         };
 
-        fs.writeFile(MET_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
+        fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
 
     }
 
@@ -529,16 +529,13 @@ async function place_order(
 
         let log_msg = {
             ts:     format(t0, FMT),
+            lvl:    "INFO",
             fn:     "place_order",
-            id:     o.id,
-            side:   o.side,
-            type:   o.type,
-            price:  o.args.price,
-            limit:  limit,
+            order:  o,
             ms:     Date.now() - t0
         };
 
-        fs.writeFile(MET_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
+        fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
 
     }
 
@@ -564,15 +561,13 @@ async function modify_order(o) {
 
         let log_msg = {
             ts:     format(t0, FMT),
+            lvl:    "INFO",
             fn:     "modify_order",
-            id:     o.id,
-            side:   o.side,
-            type:   o.type,
-            price:  o.args.price,
+            order:  o,
             ms:     Date.now() - t0
         };
 
-        fs.writeFile(MET_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
+        fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
 
     }
 
@@ -588,7 +583,15 @@ async function cancel_order(o) {
 
     if (cancel_order_res.error) {
 
-        fs.writeFile(LOG_FILE, `${format(Date.now(), FMT)},ERROR,cancel_order,${cancel_order_res.error}\n`, { flag: "a+" }, (err) => {});
+        let err_msg = {
+            ts:     format(Date.now(), FMT),
+            lvl:    "ERROR",
+            fn:     "cancel_order",
+            msg:    cancel_order_res.error
+
+        }
+
+        fs.writeFile(LOG_FILE, `${JSON.stringify(err_msg)}\n`, { flag: "a+" }, (err) => {});
 
         return cancel_order_res;
 
@@ -598,15 +601,13 @@ async function cancel_order(o) {
 
         let log_msg = {
             ts:     format(t0, FMT),
+            lvl:    "INFO",
             fn:     "cancel_order",
-            id:     o.id,
-            side:   o.side,
-            type:   o.type,
-            price:  o.args.price,
-            ms: Date.now() - t0
+            order:  o,
+            ms:     Date.now() - t0
         };
 
-        fs.writeFile(MET_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
+        fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
 
     }
 
@@ -649,12 +650,11 @@ const LIMIT         = parseInt(process.argv[6]) * TICK_SIZE;
 const TIMEOUT       = parseInt(process.argv[7]);
 const COL_WIDTH     = 15;
 const METRICS       = true;
+const LOG_FILE      = "./log.txt";
 const LOG_FLAG      = { flag: "a+" };
 const LOG_ERR       = (err) => {};
-const LOG_FILE      = "./log.txt";
-const MET_FILE      = "./metrics.json";
 const STATES        = { "BID_STATE": null, "ASK_STATE": null };
-const ORDERS        = {};          
+const ORDERS        = {}; 
 
 let HEARTBEAT       = 0;
 let LAGGED          = false;
@@ -675,7 +675,14 @@ setInterval(
         
             LAGGED = true;
 
-            fs.writeFile(LOG_FILE, `${format(Date.now(), FMT)},INFO,setInterval,hb late\n`, { flag: "a+" }, (err) => {});
+            let log_msg = {
+                ts:     `${format(Date.now(), FMT)}`,
+                lvl:    "INFO",
+                fn:     "setInterval",
+                msg:    "hb late"
+            }
+
+            fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, { flag: "a+" }, (err) => {});
 
             QUOTES_CLEARED = false;
 
@@ -687,7 +694,14 @@ setInterval(
 
             LAGGED = false;
 
-            fs.writeFile(LOG_FILE, `${format(Date.now(), FMT)},INFO,setInterval,hb ok\n`, { flag: "a+" }, (err) => {});
+            let log_msg = {
+                ts:     `${format(Date.now(), FMT)}`,
+                lvl:    "INFO",
+                fn:     "setInterval",
+                msg:    "hb ok"
+            }
+
+            fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, { flag: "a+" }, (err) => {});
 
             if (STATES.BID_STATE == "active") {
 
