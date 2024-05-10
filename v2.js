@@ -181,7 +181,11 @@ async function handle_order_msg(msg) {
                 ts:         format(Date.now(), FMT),
                 lvl:        "INFO",
                 fn:         "handle_order_msg",
-                order:      o
+                id:         o.id,
+                side:       o.side,
+                status:     o.status,
+                type:       o.type,
+                price:      o.args.price
             };
 
             if (status == "Filled")
@@ -531,8 +535,12 @@ async function place_order(
             ts:     format(t0, FMT),
             lvl:    "INFO",
             fn:     "place_order",
-            order:  o,
-            ms:     Date.now() - t0
+            ms:     Date.now() - t0,
+            id:         o.id,
+            side:       o.side,
+            status:     o.status,
+            type:       o.type,
+            price:      o.args.price
         };
 
         fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
@@ -563,8 +571,12 @@ async function modify_order(o) {
             ts:     format(t0, FMT),
             lvl:    "INFO",
             fn:     "modify_order",
-            order:  o,
-            ms:     Date.now() - t0
+            ms:     Date.now() - t0,
+            id:         o.id,
+            side:       o.side,
+            status:     o.status,
+            type:       o.type,
+            price:      o.args.price
         };
 
         fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
@@ -603,8 +615,12 @@ async function cancel_order(o) {
             ts:     format(t0, FMT),
             lvl:    "INFO",
             fn:     "cancel_order",
-            order:  o,
-            ms:     Date.now() - t0
+            ms:     Date.now() - t0,
+            id:         o.id,
+            side:       o.side,
+            status:     o.status,
+            type:       o.type,
+            price:      o.args.price
         };
 
         fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
