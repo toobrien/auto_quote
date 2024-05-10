@@ -179,6 +179,7 @@ async function handle_order_msg(msg) {
             let log_msg = {
                 ts:         format(Date.now(), FMT),
                 fn:         "handle_order_msg",
+                id:         order_id,
                 status:     status,
                 side:       o.side,
                 o_type:     o.type,
@@ -238,7 +239,7 @@ async function handle_order_msg(msg) {
 
                     delete ORDERS[order_id];
 
-                // need to requote or re-exit?
+                
 
                 break;
 
