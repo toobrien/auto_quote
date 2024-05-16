@@ -190,7 +190,7 @@ async function handle_order_msg(msg) {
 
             if (status == "Filled")
 
-                log_msg.order.fill_px = args.avgPrice;
+                log_msg.fill_px = args.avgPrice;
 
             fs.writeFile(LOG_FILE,`${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
 
