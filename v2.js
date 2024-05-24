@@ -175,6 +175,8 @@ async function handle_order_msg(msg) {
         
             return;
 
+        o.status = status;
+
         if (METRICS) {
 
             let log_msg = {
@@ -266,8 +268,6 @@ async function handle_order_msg(msg) {
                 break;
 
         }
-
-        o.status = status;
 
     }
 
