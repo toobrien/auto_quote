@@ -220,7 +220,7 @@ async function handle_order_msg(msg) {
 
                     let state           = o.side    == "BUY" ? "ASK_STATE" : "BID_STATE";
                     let side            = o.side    == "BUY" ? "SELL" : "BUY";
-                    let price           = side      == "BUY" ? L1_BID_PX - MAX_OFFSET : L1_ASK_PX + MAX_OFFSET;
+                    let price           = side      == "BUY" ? L1_BID_PX - MIN_OFFSET : L1_ASK_PX + MIN_OFFSET;
                     let place_order_res = { error: 1 };
                     
                     while (place_order_res.error)
@@ -349,13 +349,13 @@ async function toggle_quote(str, key) {
     if (key.name == "c") {
 
         side    = "BUY";
-        price   = L1_BID_PX - MAX_OFFSET;
+        price   = L1_BID_PX - MIN_OFFSET;
         state   = "BID_STATE"; 
 
     } else if (key.name == "d") {
 
         side    = "SELL";
-        price   = L1_ASK_PX + MAX_OFFSET;
+        price   = L1_ASK_PX + MIN_OFFSET;
         state   = "ASK_STATE";
 
     } else return; // ???
@@ -725,7 +725,7 @@ setInterval(
 
                 while (place_order_res.error)
 
-                    place_order_res = await place_order("BUY", "quote", L1_BID_PX - MAX_OFFSET, true);
+                    place_order_res = await place_order("BUY", "quote", L1_BID_PX - MIN_OFFSET, true);
 
             }
 
@@ -735,7 +735,7 @@ setInterval(
 
                 while (place_order_res.error)
 
-                    place_order_res = await place_order("SELL", "quote", L1_ASK_PX + MAX_OFFSET, true);
+                    place_order_res = await place_order("SELL", "quote", L1_ASK_PX + MIN_OFFSET, true);
 
             }
 
