@@ -83,7 +83,7 @@ async function update_quote(side, l1) {
 
             if (level > MAX_OFFSET || level < MIN_OFFSET) {
                 
-                o.args.price = side == "BUY" ? l1 - MAX_OFFSET : l1 + MAX_OFFSET;
+                o.args.price = side == "BUY" ? l1 - MIN_OFFSET : l1 + MIN_OFFSET;
 
                 let modify_order_res = { error: 1 };
 
