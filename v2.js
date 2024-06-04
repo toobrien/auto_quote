@@ -5,7 +5,7 @@ const fs                    = require("node:fs");
 const IN_MAP                = {};
 
 
-// node v2.js 620731036 0.25 6 8 5 10000
+// node v2.js 620731036 0.25 5 7 10000
 
 
 // order
@@ -43,7 +43,7 @@ function update_screen() {
     process.stdout.write(`${"heartbeat:".padStart(COL_WIDTH)}${String(HEARTBEAT).padStart(COL_WIDTH)}\n`);
     process.stdout.write(`${"l1:".padStart(COL_WIDTH)}${String(L1_BID_PX).padStart(COL_WIDTH)}${String(L1_ASK_PX).padStart(COL_WIDTH)}\n`);
 
-    for (let [ id, o ] of Object.entries(ORDERS)) {
+    for (let [ _, o ] of Object.entries(ORDERS)) {
 
         let offset = o.side == "BUY" ? (L1_BID_PX - o.args.price) : o.args.price - L1_ASK_PX;
         
@@ -69,7 +69,7 @@ function update_screen() {
 
 async function update_quote(side, l1) {
 
-    for (let [ id, o ] of Object.entries(ORDERS)) {
+    for (let [ _, o ] of Object.entries(ORDERS)) {
 
         let state = o.side == "BUY" ? "BID_STATE" : "ASK_STATE";
 
@@ -87,9 +87,11 @@ async function update_quote(side, l1) {
 
                 let modify_order_res = { error: 1 };
 
-                while (modify_order_res.error)
+                while (modify_order_res.error) {
 
                     modify_order_res = await modify_order(o);
+
+                }
 
             }
 
@@ -102,58 +104,23 @@ async function update_quote(side, l1) {
 
 async function exit(o) {
 
-    /*
-    let t0              = Date.now();
-    let side            = o.side == "BUY" ? "SELL" : "BUY";
-    let price           = o.side == "BUY" ? o.fill_px + LIMIT : o.fill_px - LIMIT;
-    let place_order_res = { error: 1 };
-    
-    while (place_order_res.error)
-
-        place_order_res = await place_order(side, "exit", price, true);
-
     let mkt_out = async () => {
 
-        let oid = place_order_res.order.id;
-        let o   = ORDERS[oid];
+        let side = POSITION < 0 ? "BUY" : POSITION > 0 ? "SELL" : null;
 
-        if (o) {
+        if (side)
 
-            // if !o, order was filled or cancelled already
+            // assumes fill message comes in faster than "interval"
+            
+            await place_order(side, "exit", null, false);
+            
+        else
 
-            let cancel_order_res = { error: 1 };
-
-            while (cancel_order_res.error)
-
-                cancel_order_res = await cancel_order(o);
-
-            let place_order_res = { error: 1 };
-
-            while (place_order_res.error)
-
-                place_order_res = await place_order(side, "exit", null, false);
-
-        }
+            clearInterval(handle);
 
     }
 
-    let elapsed = Date.now() - t0;
-    let handle  = setTimeout(mkt_out, TIMEOUT - elapsed);
-    */
-
-    let side = o.side == "BUY" ? "SELL" : "BUY";
-
-    let mkt_out = async() => {
-
-        let place_order_res = { error: 1 };
-
-        while (place_order_res.error)
-
-            place_order_res = await place_order(side, "exit", null, false);
-
-    }
-
-    let handle = setTimeout(mkt_out, TIMEOUT);
+    let handle = setInterval(mkt_out, LAG);
 
 }
 
@@ -201,6 +168,10 @@ async function handle_order_msg(msg) {
         switch(status) {
 
             case "Filled":
+
+                // TODO: handle whatever quantity was actually filled
+                
+                POSITION = side == "BUY" ? POSITION + 1 : POSITION - 1;
                 
                 if (ORDERS[order_id])
                 
@@ -509,7 +480,7 @@ async function place_order(
 
     if (place_order_res.error) {
 
-        fs.writeFile(LOG_FILE, `${format(Date.now(), FMT)},ERROR,place_order,${place_order_res.error}\n`, { flag: "a+" }, (err) => {});
+        fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"ERROR","fn":"place_order","msg":"${place_order_res.error}"}\n`, { flag: "a+" }, (err) => {});
 
         return place_order_res;
 
@@ -519,7 +490,7 @@ async function place_order(
 
     if (ack_order_res.error) {
 
-        fs.writeFile(LOG_FILE, `${format(Date.now(), FMT)},ERROR,ack_order,${ack_order_res.error}\n`, { flag: "a+" }, (err) => {});
+        fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"ERROR","fn":"ack_order","msg":"${ack_order_res.error}"}\n`, { flag: "a+" }, (err) => {});
 
         return ack_order_res;
     
@@ -536,11 +507,11 @@ async function place_order(
             lvl:    "INFO",
             fn:     "place_order",
             ms:     Date.now() - t0,
-            id:         o.id,
-            side:       o.side,
-            status:     o.status,
-            type:       o.type,
-            price:      o.args.price
+            id:     o.id,
+            side:   o.side,
+            status: o.status,
+            type:   o.type,
+            price:  o.args.price
         };
 
         fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
@@ -559,7 +530,7 @@ async function modify_order(o) {
 
     if (modify_order_res.error) {
 
-        fs.writeFile(LOG_FILE, `${format(Date.now(), FMT)},ERROR,modfiy_order,${modify_order_res.error}\n`, { flag: "a+" }, (err) => {});
+        fs.writeFile(LOG_FILE, `"ts":"${format(Date.now(), FMT)}","lvl":"ERROR","fn":"modfiy_order","msg":"${modify_order_res.error}"}\n`, { flag: "a+" }, (err) => {});
 
         return modify_order_res;
 
@@ -662,8 +633,7 @@ const CONID         = parseInt(process.argv[2]);
 const TICK_SIZE     = parseFloat(process.argv[3]);
 const MIN_OFFSET    = parseInt(process.argv[4]) * TICK_SIZE;
 const MAX_OFFSET    = parseInt(process.argv[5]) * TICK_SIZE;
-const LIMIT         = parseInt(process.argv[6]) * TICK_SIZE;
-const TIMEOUT       = parseInt(process.argv[7]);
+const LAG           = parseInt(process.argv[6]);
 const COL_WIDTH     = 15;
 const METRICS       = true;
 const LOG_FILE      = "./log.txt";
@@ -673,6 +643,7 @@ const STATES        = { "BID_STATE": null, "ASK_STATE": null };
 const ORDERS        = {}; 
 
 let HEARTBEAT       = 0;
+let POSITION        = 0;
 let LAGGED          = false;
 let QUOTES_CLEARED  = false;
 let L1_BID_PX       = null;
