@@ -171,7 +171,7 @@ async function handle_order_msg(msg) {
 
                 // TODO: handle whatever quantity was actually filled
                 
-                POSITION = side == "BUY" ? POSITION + 1 : POSITION - 1;
+                POSITION = o.side == "BUY" ? POSITION + 1 : POSITION - 1;
                 
                 if (ORDERS[order_id])
                 
