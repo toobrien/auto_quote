@@ -390,7 +390,7 @@ async function toggle_quote(str, key) {
 
 async function clear_quotes() {
 
-    for (let [ id, o ] of Object.entries(ORDERS)) {
+    for (let [ _, o ] of Object.entries(ORDERS)) {
 
         if (o.type == "quote") {
 
