@@ -71,13 +71,7 @@ async function update_quote(side, l1) {
 
     for (let [ _, o ] of Object.entries(ORDERS)) {
 
-        let state = o.side == "BUY" ? "BID_STATE" : "ASK_STATE";
-
-        if (
-            STATES[state]   == "active" &&
-            o.side          == side && 
-            o.type          == "quote"
-        ) {
+        if (o.type == "quote") {
 
             let level = Math.abs(o.args.price - l1);
 
@@ -125,7 +119,7 @@ async function handle_order_msg(msg) {
 
     for (let args of msg.args) {
 
-        //fs.writeFile(LOG_FILE, `${JSON.stringify(args)}\n`, { flag: "a+" }, (err) => {});
+        //fs.writeFile(LOG_FILE, `${JSON.stringify(args)}\n`, { flag: "a+" }, LOG_ERR);
 
         let status      = args.status;
         let order_id    = args.orderId;
@@ -143,7 +137,7 @@ async function handle_order_msg(msg) {
             
                 await cancel_order(o);
 
-            fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"INFO","fn":"handle_order_msg","msg": external order, id: "${order_id}"}\n`, { flag: "a+" }, (err) => {});
+            fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"INFO","fn":"handle_order_msg","msg": external order, id: "${order_id}"}\n`, { flag: "a+" }, LOG_ERR);
         
             return;
         
@@ -186,9 +180,7 @@ async function handle_order_msg(msg) {
 
                 if (o.type == "quote") {
 
-                    let state       = o.side == "BUY" ? "BID_STATE" : "ASK_STATE";
-                    o.fill_px       = parseFloat(args.avgPrice);
-                    STATES[state]   = "exit";
+                    o.fill_px = parseFloat(args.avgPrice);
 
                     await exit();
 
@@ -196,7 +188,6 @@ async function handle_order_msg(msg) {
 
                     // requote
 
-                    let state           = o.side    == "BUY" ? "ASK_STATE" : "BID_STATE";
                     let side            = o.side    == "BUY" ? "SELL" : "BUY";
                     let price           = side      == "BUY" ? L1_BID_PX - MIN_OFFSET : L1_ASK_PX + MIN_OFFSET;
                     let place_order_res = { error: 1 };
@@ -204,12 +195,6 @@ async function handle_order_msg(msg) {
                     while (place_order_res.error)
                     
                         place_order_res = await place_order(side, "quote", price, true);
-                    
-                    if (STATES[state])
-                    
-                        // preserve any toggle off during exit
-                    
-                        STATES[state] = "active";
 
                 }
 
@@ -320,8 +305,8 @@ async function init_quote() {
 
     let place_order_res = { error: 1 };
     let order_params    = [
-                            [ "BUY", "quote", L1_BID_PX - MIN_OFFSET, true ],
-                            [ "SELL", "quote", L1_ASK_PX + MIN_OFFSET, true ]
+                            [ "BUY", "quote", L1_BID_PX - MIN_OFFSET ],
+                            [ "SELL", "quote", L1_ASK_PX + MIN_OFFSET ]
                         ];
 
     for (let order of order_params) {
@@ -420,7 +405,7 @@ async function place_order(
             
             if (o.side == side) {
 
-                fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"INFO","fn":"place_order","msg":"duplicate ${side} quote requested"}\n`, { flag: "a+" }, (err) => {});
+                fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"INFO","fn":"place_order","msg":"duplicate ${side} quote requested"}\n`, { flag: "a+" }, LOG_ERR);
 
                 return res;
 
@@ -437,7 +422,7 @@ async function place_order(
 
         if (!side) {
 
-            fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"INFO","fn":"place_order","msg":"flat, ${side} market ignored"}\n`, { flag: "a+" }, (err) => {});
+            fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"INFO","fn":"place_order","msg":"flat, ${side} market ignored"}\n`, { flag: "a+" }, LOG_ERR);
 
             return res;
 
@@ -452,7 +437,7 @@ async function place_order(
 
     if (place_order_res.error) {
 
-        fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"ERROR","fn":"place_order","msg":"${place_order_res.error}"}\n`, { flag: "a+" }, (err) => {});
+        fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"ERROR","fn":"place_order","msg":"${place_order_res.error}"}\n`, { flag: "a+" }, LOG_ERR);
 
         res = place_order_res;
 
@@ -464,7 +449,7 @@ async function place_order(
 
     if (ack_order_res.error) {
 
-        fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"ERROR","fn":"ack_order","msg":"${ack_order_res.error}"}\n`, { flag: "a+" }, (err) => {});
+        fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"ERROR","fn":"ack_order","msg":"${ack_order_res.error}"}\n`, { flag: "a+" }, LOG_ERR);
 
         res = ack_order_res;
 
@@ -508,7 +493,7 @@ async function modify_order(o) {
 
     if (modify_order_res.error) {
 
-        fs.writeFile(LOG_FILE, `"ts":"${format(Date.now(), FMT)}","lvl":"ERROR","fn":"modfiy_order","msg":"${modify_order_res.error}"}\n`, { flag: "a+" }, (err) => {});
+        fs.writeFile(LOG_FILE, `"ts":"${format(Date.now(), FMT)}","lvl":"ERROR","fn":"modfiy_order","msg":"${modify_order_res.error}"}\n`, { flag: "a+" }, LOG_ERR);
 
         return modify_order_res;
 
@@ -521,11 +506,11 @@ async function modify_order(o) {
             lvl:    "INFO",
             fn:     "modify_order",
             ms:     Date.now() - t0,
-            id:         o.id,
-            side:       o.side,
-            status:     o.status,
-            type:       o.type,
-            price:      o.args.price
+            id:     o.id,
+            side:   o.side,
+            status: o.status,
+            type:   o.type,
+            price:  o.args.price
         };
 
         fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
@@ -552,7 +537,7 @@ async function cancel_order(o) {
 
         }
 
-        fs.writeFile(LOG_FILE, `${JSON.stringify(err_msg)}\n`, { flag: "a+" }, (err) => {});
+        fs.writeFile(LOG_FILE, `${JSON.stringify(err_msg)}\n`, { flag: "a+" }, LOG_ERR);
 
         return cancel_order_res;
 
@@ -616,7 +601,6 @@ const METRICS       = true;
 const LOG_FILE      = `./logs/${format(new Date(), 'yyyy-MM-dd')}_log.txt`;
 const LOG_FLAG      = { flag: "a+" };
 const LOG_ERR       = (err) => {};
-const STATES        = { "BID_STATE": null, "ASK_STATE": null };
 const ORDERS        = {}; 
 
 let HEARTBEAT       = 0;
@@ -629,12 +613,13 @@ CLIENT.set_ws_handlers(msg_handler = ws_handler);
 CLIENT.sub_market_data([ CONID ], [ mdf.bid, mdf.ask ]);
 CLIENT.sub_order_updates();
 
+
 setInterval(
     async () => { 
 
         HEARTBEAT += 1;
 
-        if (HEARTBEAT > 11 && !LAGGED) {
+        if (HEARTBEAT > 10 && !LAGGED) {
         
             LAGGED = true;
 
@@ -645,11 +630,11 @@ setInterval(
                 msg:    "hb late"
             }
 
-            fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, { flag: "a+" }, (err) => {});
+            fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, { flag: "a+" }, LOG_ERR);
 
             await clear_quote();
 
-        } else if (HEARTBEAT <= 11 && LAGGED) {
+        } else if (HEARTBEAT <= 10 && LAGGED) {
 
             LAGGED = false;
 
@@ -660,14 +645,13 @@ setInterval(
                 msg:    "hb ok"
             }
 
-            fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, { flag: "a+" }, (err) => {});
-
-            // run this always if not lagged?
-            // what if quotes aren't cleared yet?
-
-            await init_quote();
+            fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, { flag: "a+" }, LOG_ERR);
 
         }
+
+        if (Object.keys(ORDERS).length == 0 && !LAGGED)
+
+            await init_quote();
 
         update_screen();
 
