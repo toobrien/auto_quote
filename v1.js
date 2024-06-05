@@ -196,75 +196,6 @@ async function ack_order(res) {
 
 }
 
-async function exit(side) {
-
-    let start       = Date.now();
-    let exit_side   = null;
-    let exit_price  = null;
-
-    if (side == "SELL") {
-
-        exit_side   = "BUY";
-        exit_price  = ASK_ARGS.price + PT;
-
-    } else {
-
-        exit_side   = "SELL";
-        exit_price  = BID_ARGS.price - PT;
-
-    }
-
-    let args  = {
-        orders: [
-            {
-                acctId:     ACCOUNT_ID,
-                conid:      CONID,
-                orderType:  "LMT",
-                price:      exit_price,
-                side:       exit_side,
-                tif:        "GTC",
-                quantity:   1
-            }
-        ]
-    };
-
-    let res = await CLIENT.place_order(ACCOUNT_ID, args);
-
-    while (res.error)
-
-        res = await CLIENT.place_order(ACCOUNT_ID, args);
-
-    let order = null;
-
-    while (!res)
-
-        order = await ack_order(res);
-    
-    PT_OID      = order.order_id;
-    let final   = LIMIT - (Date.now() - start);
-
-    setTimeout(
-        async () => {
-
-            if (PT_OID) {
-
-                // PT hasn't filled, otherwise would be nulled in handle_message, so market out
-
-                args.orders[0].orderType = "MKT";
-
-                let res = await CLIENT.modify_order(ACCOUNT_ID, PT_OID, args);
-
-                while (res.error)
-
-                    res = await CLIENT.modify_order(ACCOUNT_ID, PT_OID, args);
-
-            }
-
-        },
-        final    
-    );
-    
-}
 
 async function place_order(side, price) {
 
@@ -385,7 +316,6 @@ function handle_order_msg(msg) {
         
         let status      = order.status;
         let order_id    = order.orderId;
-        let side        = order_id == BID_ARGS.order_id ? "BUY" : order_id == ASK_ARGS.order_id ? "SELL" : null;
         
         if (order_id == BID_ARGS.order_id) {
 
@@ -413,28 +343,7 @@ function handle_order_msg(msg) {
 
         if (status == "Filled") {
 
-            if (side)
-
-                // quote order
-            
-                exit(side);
-            
-            else if (order_id == PT_OID) {
-
-                PT_OID = null;
-
-                if (CONTINUOUS)
-
-                    ; // TODO: reset bid/ask
-
-                else
-
-                    ; // TODO: ???
-
-            }
-
-
-            // else unrelated order
+            ;
 
         }
         
