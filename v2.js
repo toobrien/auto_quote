@@ -401,7 +401,7 @@ async function place_order(
 
     if (type == "quote") {
 
-        for (let o of ORDERS) {
+        for (let o of Object.values(ORDERS)) {
             
             if (o.side == side) {
 
