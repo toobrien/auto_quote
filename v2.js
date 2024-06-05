@@ -144,11 +144,11 @@ async function handle_order_msg(msg) {
             // new order: should be added shortly by place_order
             // cancel/replace by IBKR: cancel and wait for init_quote
 
-            if (o.orderType == "Limit" && check_quote(side)) {
+            if (args.orderType == "Limit" && check_quote(side)) {
 
                 let cancel_order_res = { error: 1 };
                 
-                o = new order(order_id, o.side, "quote", { price: o.price });
+                o = new order(order_id, args.side, "quote", { price: args.price });
                 
                 while (cancel_order_res.error)
 
