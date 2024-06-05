@@ -144,7 +144,7 @@ async function handle_order_msg(msg) {
             // new order: should be added shortly by place_order
             // cancel/replace by IBKR: cancel and wait for init_quote
 
-            if (args.orderType == "Limit" && check_quote(side)) {
+            if (args.orderType == "Limit" && check_quote(args.side)) {
 
                 let cancel_order_res = { error: 1 };
                 
@@ -156,9 +156,9 @@ async function handle_order_msg(msg) {
 
                 fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"INFO","fn":"handle_order_msg","msg":${JSON.stringify(args)}"}\n`, { flag: "a+" }, LOG_ERR);
 
-                return;
-
             }
+
+            return;
         
         }
 
@@ -450,7 +450,8 @@ async function place_order(
 
         }
 
-        args.orders[0].orderType = "MKT";
+        args.orders[0].orderType    = "MKT";
+        args.orders[0].side         = side;
 
     }
 

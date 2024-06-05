@@ -1,9 +1,11 @@
 from json import loads
+from sys  import argv
 
 
 if __name__ == "__main__":
 
-    recs = sorted([ loads(line) for line in open("./metrics.json", "r") ], key = lambda rec: rec["ts"])
+    fn   = f"./logs/{argv[1]}_log.txt"
+    recs = sorted([ loads(line) for line in open(fn, "r") ], key = lambda rec: rec["ts"])
 
     for rec in recs:
 
