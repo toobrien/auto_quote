@@ -1,9 +1,0 @@
-{
-    "620731036": {
-        "tick_size":    0.25,
-        "min_offset":   7,
-        "max_offset":   10,
-        "limit":        5,
-        "timeout":      500
-    }
-}

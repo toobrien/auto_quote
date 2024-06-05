@@ -102,19 +102,15 @@ async function update_quote(side, l1) {
 }
 
 
-async function exit(o) {
+async function exit() {
 
     let mkt_out = async () => {
 
-        let side = POSITION < 0 ? "BUY" : POSITION > 0 ? "SELL" : null;
-
-        if (side)
-
-            // assumes fill message comes in faster than "interval"
+        // assumes fill message comes in faster than "interval"    
+        
+        let place_order_res = await place_order(null, "exit", null);
             
-            await place_order(side, "exit", null, false);
-            
-        else
+        if (!place_order_res.error)
 
             clearInterval(handle);
 
@@ -135,12 +131,23 @@ async function handle_order_msg(msg) {
         let order_id    = args.orderId;
         let o           = ORDERS[order_id];
 
-        if (!o) 
+        if (!o) {
 
-            // external order
-            // TODO: but what if IBKR cancels and replaces?
+            // external order -- initiated by IBKR cancel & replace?
+
+            o = new order(order_id, null, null, null);
+
+            let cancel_order_res = { error: 1 };
+
+            while (cancel_order_res.error)
+            
+                await cancel_order(o);
+
+            fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"INFO","fn":"handle_order_msg","msg": external order, id: "${order_id}"}\n`, { flag: "a+" }, (err) => {});
         
             return;
+        
+        }
 
         o.status = status;
 
@@ -183,7 +190,7 @@ async function handle_order_msg(msg) {
                     o.fill_px       = parseFloat(args.avgPrice);
                     STATES[state]   = "exit";
 
-                    await exit(o);
+                    await exit();
 
                 } else if (o.type == "exit") {
 
@@ -213,8 +220,6 @@ async function handle_order_msg(msg) {
                 if (ORDERS[order_id])
 
                     delete ORDERS[order_id];
-
-                
 
                 break;
 
@@ -311,84 +316,28 @@ function ws_handler(evt) {
 }
 
 
-async function toggle_quote(str, key) {
+async function init_quote() {
 
-    let side    = null;
-    let price   = null;
-    let state   = null;
+    let place_order_res = { error: 1 };
+    let order_params    = [
+                            [ "BUY", "quote", L1_BID_PX - MIN_OFFSET, true ],
+                            [ "SELL", "quote", L1_ASK_PX + MIN_OFFSET, true ]
+                        ];
 
-    if (key.name == "c") {
+    for (let order of order_params) {
 
-        side    = "BUY";
-        price   = L1_BID_PX - MIN_OFFSET;
-        state   = "BID_STATE"; 
+        while (place_order_res.error)
+        
+            place_order_res = await place_order(...order);
 
-    } else if (key.name == "d") {
-
-        side    = "SELL";
-        price   = L1_ASK_PX + MIN_OFFSET;
-        state   = "ASK_STATE";
-
-    } else return; // ???
-
-    switch(STATES[state]) {
-
-        case null:
-
-            let place_order_res = await place_order(side, "quote", price, true);
-
-            if (!place_order_res.error)
-
-                STATES[state] = "active";
-
-            break;
-
-        case "active":
-
-            let to_cancel = null; 
-
-            for (let [ id, o ]  of Object.entries(ORDERS)) {
-
-                if (o.side == side && o.type == "quote") {
-
-                    to_cancel = o;
-
-                    break;
-
-                }
-
-            }
-
-            if (to_cancel) {
-
-                let cancel_order_res = { error: 1 }
-
-                while (cancel_order_res.error)
-
-                    cancel_order_res = await cancel_order(to_cancel);
-            
-            }
-
-            STATES[state] = null;
-            
-            break;
-
-        case "exit":
-
-            STATES[state] = null;
-
-            break;
-
-        default:
-
-            break;
+        place_order_res = { error: 1 };
 
     }
 
 }
 
 
-async function clear_quotes() {
+async function clear_quote() {
 
     for (let [ _, o ] of Object.entries(ORDERS)) {
 
@@ -412,7 +361,7 @@ async function clear_quotes() {
 
 async function quit() {
 
-    await clear_quotes();
+    await clear_quote();
     
     process.exit();
 
@@ -448,33 +397,56 @@ async function ack_order(place_order_res) {
 async function place_order(
     side,
     type,
-    price,
-    limit,
+    price
 ) {
 
     let t0      = Date.now();
+    let res     = {}
     let args    = {
-        orders: [
-            {
-                acctId:     ACCOUNT_ID,
-                conid:      CONID,
-                side:       side,
-                tif:        "GTC",
-                quantity:   1
-            }
-        ]
-    };
+                    orders: [
+                        {
+                            acctId:     ACCOUNT_ID,
+                            conid:      CONID,
+                            side:       side,
+                            tif:        "GTC",
+                            quantity:   1
+                        }
+                    ]
+                };
 
-    if (limit) {
+    if (type == "quote") {
+
+        for (let o of ORDERS) {
+            
+            if (o.side == side) {
+
+                fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"INFO","fn":"place_order","msg":"duplicate ${side} quote requested"}\n`, { flag: "a+" }, (err) => {});
+
+                return res;
+
+            }
+
+        }
 
         args.orders[0].price        = price;
         args.orders[0].orderType    = "LMT";
 
-    } else {
+    } else if (type == "exit") {
 
-        args.orders[0].orderType    = "MKT";
+        side = POSITION < 0 ? "BUY" : POSITION > 0 ? "SELL" : null;
+
+        if (!side) {
+
+            fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"INFO","fn":"place_order","msg":"flat, ${side} market ignored"}\n`, { flag: "a+" }, (err) => {});
+
+            return res;
+
+        }
+
+        args.orders[0].orderType = "MKT";
 
     }
+
 
     let place_order_res = await CLIENT.place_order(ACCOUNT_ID, args);
 
@@ -482,7 +454,9 @@ async function place_order(
 
         fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"ERROR","fn":"place_order","msg":"${place_order_res.error}"}\n`, { flag: "a+" }, (err) => {});
 
-        return place_order_res;
+        res = place_order_res;
+
+        return res;
 
     }
 
@@ -492,7 +466,9 @@ async function place_order(
 
         fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"ERROR","fn":"ack_order","msg":"${ack_order_res.error}"}\n`, { flag: "a+" }, (err) => {});
 
-        return ack_order_res;
+        res = ack_order_res;
+
+        return res;
     
     }
 
@@ -518,7 +494,9 @@ async function place_order(
 
     }
 
-    return { order: o };
+    res = { order: o }
+
+    return res;
 
 }
 
@@ -622,8 +600,7 @@ process.stdin.on(
     }
 );
 
-IN_MAP["d"]         = toggle_quote;
-IN_MAP["c"]         = toggle_quote;
+
 IN_MAP["q"]         = quit;
 
 const FMT           = "yyyy-MM-dd'T'HH:mm:ss.SSS";
@@ -636,7 +613,7 @@ const MAX_OFFSET    = parseInt(process.argv[5]) * TICK_SIZE;
 const LAG           = parseInt(process.argv[6]);
 const COL_WIDTH     = 15;
 const METRICS       = true;
-const LOG_FILE      = "./log.txt";
+const LOG_FILE      = `./logs/${format(new Date(), 'yyyy-MM-dd')}_log.txt`;
 const LOG_FLAG      = { flag: "a+" };
 const LOG_ERR       = (err) => {};
 const STATES        = { "BID_STATE": null, "ASK_STATE": null };
@@ -645,7 +622,6 @@ const ORDERS        = {};
 let HEARTBEAT       = 0;
 let POSITION        = 0;
 let LAGGED          = false;
-let QUOTES_CLEARED  = false;
 let L1_BID_PX       = null;
 let L1_ASK_PX       = null;
 
@@ -671,13 +647,9 @@ setInterval(
 
             fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, { flag: "a+" }, (err) => {});
 
-            QUOTES_CLEARED = false;
+            await clear_quote();
 
-            await clear_quotes();
-
-            QUOTES_CLEARED = true;
-
-        } else if (HEARTBEAT <= 11 && LAGGED && QUOTES_CLEARED) {
+        } else if (HEARTBEAT <= 11 && LAGGED) {
 
             LAGGED = false;
 
@@ -690,25 +662,9 @@ setInterval(
 
             fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, { flag: "a+" }, (err) => {});
 
-            if (STATES.BID_STATE == "active") {
+            // run this always if not lagged?
 
-                let place_order_res = { error: 1 };
-
-                while (place_order_res.error)
-
-                    place_order_res = await place_order("BUY", "quote", L1_BID_PX - MIN_OFFSET, true);
-
-            }
-
-            if (STATES.ASK_STATE == "active") {
-
-                let place_order_res = { error: 1 };
-
-                while (place_order_res.error)
-
-                    place_order_res = await place_order("SELL", "quote", L1_ASK_PX + MIN_OFFSET, true);
-
-            }
+            await init_quote();
 
         }
 
