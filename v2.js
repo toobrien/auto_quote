@@ -71,7 +71,7 @@ async function update_quote(side, l1) {
 
     for (let [ _, o ] of Object.entries(ORDERS)) {
 
-        if (o.type == "quote") {
+        if (o.type == "quote" && o.side == side) {
 
             let level = Math.abs(o.args.price - l1);
 
