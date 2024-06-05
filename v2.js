@@ -154,7 +154,7 @@ async function handle_order_msg(msg) {
 
                     cancel_order(o);
 
-                fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"INFO","fn":"handle_order_msg","msg":${JSON.stringify(args)}"}\n`, { flag: "a+" }, LOG_ERR);
+                fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"INFO","fn":"handle_order_msg","msg": cancelled duplicate ${args.side} quote @ ${args.price}"}\n`, { flag: "a+" }, LOG_ERR);
 
             }
 
@@ -164,26 +164,16 @@ async function handle_order_msg(msg) {
 
         o.status = status;
 
-        if (METRICS) {
-
-            let log_msg = {
-                ts:         format(Date.now(), FMT),
-                lvl:        "INFO",
-                fn:         "handle_order_msg",
-                id:         o.id,
-                side:       o.side,
-                status:     o.status,
-                type:       o.type,
-                price:      o.args.price
-            };
-
-            if (status == "Filled")
-
-                log_msg.fill_px = args.avgPrice;
-
-            fs.writeFile(LOG_FILE,`${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
-
-        }
+        let log_msg = {
+            ts:         format(Date.now(), FMT),
+            lvl:        "INFO",
+            fn:         "handle_order_msg",
+            id:         o.id,
+            side:       o.side,
+            status:     o.status,
+            type:       o.type,
+            price:      o.args.price
+        };
 
         switch(status) {
 
@@ -192,6 +182,9 @@ async function handle_order_msg(msg) {
                 // TODO: handle whatever quantity was actually filled
                 
                 POSITION = o.side == "BUY" ? POSITION + 1 : POSITION - 1;
+
+                log_msg.position    = POSITION;
+                log_msg.fill_px     = args.avgPrice;
                 
                 if (ORDERS[order_id])
                 
@@ -252,6 +245,10 @@ async function handle_order_msg(msg) {
                 break;
 
         }
+
+        if (LOGGING)  
+
+            fs.writeFile(LOG_FILE,`${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
 
     }
 
@@ -387,7 +384,7 @@ async function ack_order(place_order_res) {
     let message_id      = place_order_res[0].id;
     let ack_order_res   = res = await CLIENT.reply(message_id);
 
-    if (METRICS) {
+    if (LOGGING) {
 
         let log_msg = {
             ts:     format(t0, FMT),
@@ -432,7 +429,7 @@ async function place_order(
 
             fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"INFO","fn":"place_order","msg":"duplicate ${side} quote requested"}\n`, { flag: "a+" }, LOG_ERR);
 
-                return res;
+            return res;
         }
 
         args.orders[0].price        = price;
@@ -484,7 +481,7 @@ async function place_order(
     let o       = new order(id, side, type, args.orders[0]);
     ORDERS[id]  = o;
 
-    if (METRICS) {
+    if (LOGGING) {
 
         let log_msg = {
             ts:     format(t0, FMT),
@@ -522,7 +519,7 @@ async function modify_order(o) {
 
     }
 
-    if (METRICS) {
+    if (LOGGING) {
 
         let log_msg = {
             ts:     format(t0, FMT),
@@ -566,7 +563,7 @@ async function cancel_order(o) {
 
     }
 
-    if (METRICS) {
+    if (LOGGING) {
 
         let log_msg = {
             ts:     format(t0, FMT),
@@ -620,7 +617,7 @@ const MIN_OFFSET    = parseInt(process.argv[4]) * TICK_SIZE;
 const MAX_OFFSET    = parseInt(process.argv[5]) * TICK_SIZE;
 const LAG           = parseInt(process.argv[6]);
 const COL_WIDTH     = 15;
-const METRICS       = true;
+const LOGGING       = true;
 const LOG_FILE      = `./logs/${format(new Date(), 'yyyy-MM-dd')}_log.txt`;
 const LOG_FLAG      = { flag: "a+" };
 const LOG_ERR       = (err) => {};
