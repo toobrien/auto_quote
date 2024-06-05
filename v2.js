@@ -663,6 +663,7 @@ setInterval(
             fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, { flag: "a+" }, (err) => {});
 
             // run this always if not lagged?
+            // what if quotes aren't cleared yet?
 
             await init_quote();
 
