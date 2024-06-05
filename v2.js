@@ -114,6 +114,20 @@ async function exit() {
 
 }
 
+function check_quote(side) {
+
+    let exists = false;
+
+    for (let o of Object.values(ORDERS)) {
+
+        exists = (o.type == "quote" && o.side == side) ? true : exists;
+
+    }
+
+    return exists;
+
+}
+
 
 async function handle_order_msg(msg) {
 
@@ -127,19 +141,24 @@ async function handle_order_msg(msg) {
 
         if (!o) {
 
-            // external order -- initiated by IBKR cancel & replace?
+            // new order: should be added shortly by place_order
+            // cancel/replace by IBKR: cancel and wait for init_quote
 
-            o = new order(order_id, null, null, null);
+            if (o.orderType == "Limit" && check_quote(side)) {
 
-            let cancel_order_res = { error: 1 };
+                let cancel_order_res = { error: 1 };
+                
+                o = new order(order_id, o.side, "quote", { price: o.price });
+                
+                while (cancel_order_res.error)
 
-            while (cancel_order_res.error)
-            
-                await cancel_order(o);
+                    cancel_order(o);
 
-            fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"INFO","fn":"handle_order_msg","msg": external order, id: "${order_id}"}\n`, { flag: "a+" }, LOG_ERR);
-        
-            return;
+                fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"INFO","fn":"handle_order_msg","msg":${JSON.stringify(args)}"}\n`, { flag: "a+" }, LOG_ERR);
+
+                return;
+
+            }
         
         }
 
@@ -224,6 +243,10 @@ async function handle_order_msg(msg) {
 
                 ;
 
+            case "Inactive":
+
+                ;
+
             default:
 
                 break;
@@ -303,19 +326,23 @@ function ws_handler(evt) {
 
 async function init_quote() {
 
-    let place_order_res = { error: 1 };
-    let order_params    = [
-                            [ "BUY", "quote", L1_BID_PX - MIN_OFFSET ],
-                            [ "SELL", "quote", L1_ASK_PX + MIN_OFFSET ]
-                        ];
+    if (L1_BID_PX && L1_ASK_PX) {
 
-    for (let order of order_params) {
-
-        while (place_order_res.error)
-        
-            place_order_res = await place_order(...order);
-
-        place_order_res = { error: 1 };
+        let place_order_res = { error: 1 };
+        let order_params    = [
+                                [ "BUY", "quote", L1_BID_PX - MIN_OFFSET ],
+                                [ "SELL", "quote", L1_ASK_PX + MIN_OFFSET ]
+                            ];
+    
+        for (let order of order_params) {
+    
+            while (place_order_res.error)
+            
+                place_order_res = await place_order(...order);
+    
+            place_order_res = { error: 1 };
+    
+        }
 
     }
 
@@ -401,16 +428,11 @@ async function place_order(
 
     if (type == "quote") {
 
-        for (let o of Object.values(ORDERS)) {
-            
-            if (o.side == side) {
+        if (check_quote(side)) {
 
-                fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"INFO","fn":"place_order","msg":"duplicate ${side} quote requested"}\n`, { flag: "a+" }, LOG_ERR);
+            fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"INFO","fn":"place_order","msg":"duplicate ${side} quote requested"}\n`, { flag: "a+" }, LOG_ERR);
 
                 return res;
-
-            }
-
         }
 
         args.orders[0].price        = price;
