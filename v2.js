@@ -94,19 +94,15 @@ async function update_quote(side, l1) {
 
 async function exit() {
 
-    let mkt_out = async () => {
+    let place_order_res = { error: 1 }
 
-        // assumes fill message comes in faster than "interval"    
-        
-        let place_order_res = await place_order(null, "exit", null);
-            
-        if (!place_order_res.error)
+    while(place_order_res.error) {
 
-            clearInterval(handle);
+        await new Promise(resolve => setTimeout(resolve, LAG));
+
+        place_order_res = await place_order(null, "exit", null);
 
     }
-
-    let handle = setInterval(mkt_out, LAG);
 
 }
 
@@ -140,15 +136,25 @@ async function handle_order_msg(msg) {
             // new order: should be added shortly by place_order
             // cancel/replace by IBKR: cancel and wait for init_quote
 
-            if (args.orderType == "Limit" && check_quote(args.side)) {
+            if (
+                args.conid      == CONID    &&
+                args.orderType  == "Limit"  && 
+                check_quote(args.side)
+            ) {
 
                 let cancel_order_res = { error: 1 };
                 
                 o = new order(order_id, args.side, "quote", { price: args.price });
                 
-                while (cancel_order_res.error)
+                while (cancel_order_res.error) {
 
                     cancel_order(o);
+
+                    if (cancel_order_res.error)
+
+                        await new Promise(resolve => setTimeout(resolve, LAG));
+
+                }
 
                 fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"INFO","fn":"handle_order_msg","msg": cancelled duplicate ${args.side} quote @ ${args.price}"}\n`, { flag: "a+" }, LOG_ERR);
 
@@ -362,9 +368,15 @@ async function clear_quote() {
 
             let cancel_order_res = { error: 1 };
 
-            while (cancel_order_res.error)
+            while (cancel_order_res.error) {
 
                 cancel_order_res = await cancel_order(o);
+
+                if (cancel_order_res.error)
+
+                    await new Promise(resolve => setTimeout(resolve, LAG));
+
+            }
 
             if (ORDERS[o.id])
 
