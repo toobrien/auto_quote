@@ -79,13 +79,9 @@ async function update_quote(side, l1) {
                 
                 o.args.price = side == "BUY" ? l1 - MIN_OFFSET : l1 + MIN_OFFSET;
 
-                let modify_order_res = { error: 1 };
+                let modify_order_res = await modify_order(o);
 
-                while (modify_order_res.error) {
-
-                    modify_order_res = await modify_order(o);
-
-                }
+                // dont retry on error, let next update_quote attempt to handle it
 
             }
 
@@ -204,9 +200,15 @@ async function handle_order_msg(msg) {
                     let price           = side      == "BUY" ? L1_BID_PX - MIN_OFFSET : L1_ASK_PX + MIN_OFFSET;
                     let place_order_res = { error: 1 };
                     
-                    while (place_order_res.error)
+                    while (place_order_res.error) {
                     
                         place_order_res = await place_order(side, "quote", price, true);
+
+                        if (place_order_res.error)
+
+                            await new Promise(resolve => setTimeout(resolve, LAG));
+
+                    }
 
                 }
 
@@ -333,9 +335,15 @@ async function init_quote() {
     
         for (let order of order_params) {
     
-            while (place_order_res.error)
+            while (place_order_res.error) {
             
                 place_order_res = await place_order(...order);
+
+                if (place_order_res.error)
+
+                    await new Promise(resolve => setTimeout(resolve, LAG));
+
+            }
     
             place_order_res = { error: 1 };
     
@@ -390,7 +398,7 @@ async function ack_order(place_order_res) {
             ts:     format(t0, FMT),
             lvl:    "INFO",
             fn:     "ack_order",
-            msg:    ack_order_res,
+            msg:    JSON.stringify(ack_order_res),
             ms:     Date.now() - t0
         };
 
