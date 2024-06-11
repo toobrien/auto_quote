@@ -244,6 +244,7 @@ class base_client {
 
     }
 
+
     async place_order(account_id, args) {
 
         let res = await fetch(
@@ -260,6 +261,7 @@ class base_client {
         return res;
 
     }
+
 
     async reply(reply_id) {
 
@@ -307,6 +309,21 @@ class base_client {
         return res;
 
     }
+
+
+    async tickle() {
+
+        let res = await fetch(
+            `${this.rest_uri}/tickle`,
+
+        );
+
+        res = res.status == 200 ? await res.json() : { "error": res.statusText };
+
+        return res;
+
+    }
+
     
     async sub_order_updates() {
 
@@ -317,6 +334,7 @@ class base_client {
 
     }
     
+
     unsub_order_updates() {
 
         if (!this.ws) return;
@@ -324,6 +342,7 @@ class base_client {
         this.ws.send("uor+{}");
 
     }
+
 
 }
 

@@ -698,3 +698,8 @@ setInterval(
     },
     1000
 );
+
+setInterval(
+    async () => { await CLIENT.tickle(); },
+    59000
+);
