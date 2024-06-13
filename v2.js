@@ -160,7 +160,8 @@ async function handle_order_msg(msg) {
 
             }
 
-            return;
+            // skipping return should be harmless
+            // return;
         
         }
 
@@ -196,7 +197,7 @@ async function handle_order_msg(msg) {
 
                     o.fill_px = parseFloat(args.avgPrice);
 
-                    await exit();
+                    exit();
 
                 } else if (o.type == "exit") {
 
