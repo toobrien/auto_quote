@@ -133,14 +133,16 @@ async function handle_order_msg(msg) {
 
         if (!o) {
 
-            // new order: should be added shortly by place_order
-            // cancel/replace by IBKR: cancel and wait for init_quote
+            // unknown order: either from external source (e.g. IBKR cancel and replace) or 
+            // place_order has not added it yet
 
             if (
                 args.conid      == CONID    &&
                 args.orderType  == "Limit"  && 
                 check_quote(args.side)
             ) {
+
+                // duplicate
 
                 let cancel_order_res = { error: 1 };
                 
@@ -160,9 +162,8 @@ async function handle_order_msg(msg) {
 
             }
 
-            // skipping return should be harmless
-            // return;
-        
+            o = new order(order_id, args.side, args.orderType == "Limit" ? "quote" : "exit", args = {});
+
         }
 
         o.status = status;
