@@ -337,8 +337,8 @@ async function init_quote() {
         let place_order_res = { error: 1 };
         let order_params    = [];
 
-        if (!check_quote("BUY")) order_params.append([ "BUY", "quote", L1_BID_PX - MIN_OFFSET ]);
-        if (!check_quote("SELL")) order_params.append([ "SELL", "quote", L1_ASK_PX + MIN_OFFSET ]);
+        if (!check_quote("BUY")) order_params.push([ "BUY", "quote", L1_BID_PX - MIN_OFFSET ]);
+        if (!check_quote("SELL")) order_params.push([ "SELL", "quote", L1_ASK_PX + MIN_OFFSET ]);
     
         for (let order of order_params) {
     
