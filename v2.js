@@ -335,10 +335,10 @@ async function init_quote() {
     if (L1_BID_PX && L1_ASK_PX) {
 
         let place_order_res = { error: 1 };
-        let order_params    = [
-                                [ "BUY", "quote", L1_BID_PX - MIN_OFFSET ],
-                                [ "SELL", "quote", L1_ASK_PX + MIN_OFFSET ]
-                            ];
+        let order_params    = [];
+
+        if (!check_quote("BUY")) order_params.append([ "BUY", "quote", L1_BID_PX - MIN_OFFSET ]);
+        if (!check_quote("SELL")) order_params.append([ "SELL", "quote", L1_ASK_PX + MIN_OFFSET ]);
     
         for (let order of order_params) {
     
@@ -498,9 +498,12 @@ async function place_order(
     
     }
 
-    let id      = ack_order_res[0].order_id;
-    let o       = new order(id, side, type, args.orders[0]);
-    ORDERS[id]  = o;
+    let id  = ack_order_res[0].order_id;
+    let o   = new order(id, side, type, args.orders[0]);
+        
+    if (type == "quote")
+            
+        ORDERS[id]  = o;
 
     if (LOGGING) {
 
@@ -690,7 +693,7 @@ setInterval(
 
         }
 
-        if (Object.keys(ORDERS).length == 0 && !LAGGED)
+        if (Object.keys(ORDERS).length != 2 && !LAGGED)
 
             await init_quote();
 
