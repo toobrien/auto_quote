@@ -144,17 +144,24 @@ async function handle_order_msg(msg) {
 
                 // duplicate
 
-                let cancel_order_res = { error: 1 };
-                
+                let cancel_order_res    = { error: 1 };
+                let retries             = 3;
+
                 o = new order(order_id, args.side, "quote", { price: args.price });
                 
-                while (cancel_order_res.error) {
+                while (retries > 0) {
 
                     cancel_order(o);
 
-                    if (cancel_order_res.error)
+                    if (cancel_order_res.error) {
 
                         await new Promise(resolve => setTimeout(resolve, LAG));
+                        
+                        retries -= 1;
+
+                    } else
+
+                        retries = 0;
 
                 }
 
@@ -369,14 +376,21 @@ async function clear_quote() {
         if (o.type == "quote") {
 
             let cancel_order_res = { error: 1 };
+            let retries          = 3;
 
-            while (cancel_order_res.error) {
+            while (retries > 0) {
 
                 cancel_order_res = await cancel_order(o);
 
-                if (cancel_order_res.error)
+                if (cancel_order_res.error) {
 
                     await new Promise(resolve => setTimeout(resolve, LAG));
+
+                    retries -= 1;
+                
+                } else
+
+                    retries = 0;
 
             }
 
