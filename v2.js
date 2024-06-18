@@ -185,7 +185,7 @@ async function handle_order_msg(msg) {
 
                 // TODO: handle whatever quantity was actually filled
                 
-                POSITION = args.orderDesc.contains("Bought") ? POSITION + 1 : POSITION - 1;
+                POSITION = args.orderDesc.includes("Bought") ? POSITION + 1 : POSITION - 1;
 
                 log_msg.position    = POSITION;
                 log_msg.fill_px     = args.avgPrice;
