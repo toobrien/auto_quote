@@ -131,47 +131,11 @@ async function handle_order_msg(msg) {
         let order_id    = args.orderId;
         let o           = ORDERS[order_id];
 
-        if (!o) {
+        if (!o)
 
-            // unknown order: either from external source (e.g. IBKR cancel and replace) or 
-            // place_order has not added it yet
-
-            if (
-                args.conid      == CONID    &&
-                args.orderType  == "Limit"  && 
-                check_quote(args.side)
-            ) {
-
-                // duplicate
-
-                let cancel_order_res    = { error: 1 };
-                let retries             = 3;
-
-                o = new order(order_id, args.side, "quote", { price: args.price });
-                
-                while (retries > 0) {
-
-                    cancel_order(o);
-
-                    if (cancel_order_res.error) {
-
-                        await new Promise(resolve => setTimeout(resolve, LAG));
-                        
-                        retries -= 1;
-
-                    } else
-
-                        retries = 0;
-
-                }
-
-                fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"INFO","fn":"handle_order_msg","msg": cancelled duplicate ${args.side} quote @ ${args.price}"}\n`, { flag: "a+" }, LOG_ERR);
-
-            }
+            // unknown order: either not added by place_order yet or placed from external source
 
             o = new order(order_id, args.side, args.orderType == "Limit" ? "quote" : "exit", args = {});
-
-        }
 
         o.status = status;
 
@@ -396,6 +360,8 @@ async function clear_quote() {
 
             if (ORDERS[o.id])
 
+                // if the cancellation failed, clean_stale_quotes should get it eventually
+
                 delete ORDERS[o.id];
 
         }
@@ -416,7 +382,6 @@ async function quit() {
 async function ack_order(place_order_res) {
     
     let t0              = Date.now();
-    let res             = {};
     let message_id      = place_order_res[0].id;
     let ack_order_res   = res = await CLIENT.reply(message_id);
 
@@ -626,6 +591,61 @@ async function cancel_order(o) {
 }
 
 
+async function clean_stale_quotes() {
+
+    let orders_res = await CLIENT.orders(filters = "Submitted");
+
+    if (orders_res.error || orders_res.orders.length == 0)
+
+        // try again later
+
+        return;
+
+    for (let o of orders_res.orders) {
+
+        if (
+            o.conid     == CONID        &&
+            o.orderType == "Limit"      &&
+            !ORDERS.contains(o.conid)
+        ) {
+
+            // unregistered order, eliminate
+
+            let cancel_order_res    = { error: 1 };
+            let retries             = 3;
+
+            while (retries > 0) {
+            
+                retries             -= 1
+                cancel_order_res    = await cancel_order(o);
+
+                if (!cancel_order_res.error)
+
+                    break;
+                
+                else
+
+                    await new Promise(resolve => setTimeout(resolve, LAG));
+            
+            }
+
+            let log_msg = {
+                ts: format(Date.now(), FMT),
+                lvl: "INFO",
+                fn: "clean_stale_quotes",
+                id: o.orderId,
+                msg: "unregistered quote cancelled"
+            };
+
+            fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
+
+        } 
+
+    }
+
+}
+
+
 // init
 
 
@@ -722,4 +742,9 @@ setInterval(
 setInterval(
     async () => { await CLIENT.tickle(); },
     59000
+);
+
+setInterval(
+    clean_stale_quotes,
+    6000
 );

@@ -245,6 +245,30 @@ class base_client {
     }
 
 
+    async orders(filters = null, force = null) {
+
+        // query string params not implemented
+
+        let params = new URLSearchParams();
+
+        if (filters)    params.append("filter", filters);
+        if (force)      params.append("force", force);
+        
+        let res = await fetch(
+            `${this.rest_uri}/iserver/account/orders` + params,
+            {
+                method: "GET",
+                headers: { "accept": "application/json" }
+            }
+        );
+
+        res = res.status == 200 ? await res.json() : { error: res.statusText };
+
+        return res;
+
+    }
+
+
     async place_order(account_id, args) {
 
         let res = await fetch(
