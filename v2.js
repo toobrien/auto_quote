@@ -131,6 +131,10 @@ async function handle_order_msg(msg) {
         let order_id    = args.orderId;
         let o           = ORDERS[order_id];
 
+        if (!status)
+
+            return;
+
         if (!o)
 
             // unknown order: either not added by place_order yet or placed from external source
