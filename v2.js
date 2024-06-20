@@ -5,7 +5,7 @@ const fs                    = require("node:fs");
 const IN_MAP                = {};
 
 
-// node v2.js 620731036 0.25 5 7 10000
+// node v2.js 620731036 0.25 5 7 9750
 
 
 // order
@@ -79,7 +79,7 @@ async function update_quote(side, l1) {
                 
                 o.args.price = side == "BUY" ? l1 - MIN_OFFSET : l1 + MIN_OFFSET;
 
-                let modify_order_res = await modify_order(o);
+                await modify_order(o);
 
                 // dont retry on error, let next update_quote attempt to handle it
 
@@ -98,7 +98,7 @@ async function exit() {
 
     while(place_order_res.error) {
 
-        await new Promise(resolve => setTimeout(resolve, LAG));
+        await new Promise(resolve => setTimeout(resolve, EXIT_LAG));
 
         place_order_res = await place_order(null, "exit", null);
 
@@ -106,15 +106,20 @@ async function exit() {
 
 }
 
+
 function check_quote(side) {
 
     let exists = false;
 
-    for (let o of Object.values(ORDERS)) {
+    for (let o of Object.values(ORDERS))
 
-        exists = (o.type == "quote" && o.side == side) ? true : exists;
+        if (o.type == "quote" && o.side == side) {
 
-    }
+            exists = true;
+
+            break;
+
+        }
 
     return exists;
 
@@ -129,6 +134,10 @@ async function handle_order_msg(msg) {
 
         let status      = args.status;
         let order_id    = args.orderId;
+        let side        = args.side;
+        let type        = args.orderType ? args.orderType == "Limit" ? "quote" : "exit" : 
+                          args.orderDesc ? args.orderDesc.includes("Limit") ? "quote" : "exit" : 
+                          "unknown";
         let o           = ORDERS[order_id];
 
         if (!status)
@@ -139,7 +148,7 @@ async function handle_order_msg(msg) {
 
             // unknown order: either not added by place_order yet or placed from external source
 
-            o = new order(order_id, args.side, args.orderType == "Limit" ? "quote" : "exit", args = {});
+            o = new order(order_id, side, type, {});
 
         o.status = status;
 
@@ -158,16 +167,25 @@ async function handle_order_msg(msg) {
 
             case "Filled":
 
-                // TODO: handle whatever quantity was actually filled
+                // TODO: when does status == "Filled" but args.orderDesc == undefined?
                 
+                // wait is needed in rare case limit is filled before ORDERS is populated;
+                // otherwise it may be a fill for another contract; type must be set correctly!
+
+                await new Promise(resolve => setTimeout(resolve, ERR_LAG));
+                
+                if (ORDERS[order_id])   
+                    
+                    delete ORDERS[order_id];
+                
+                else
+
+                    break;
+
                 POSITION = args.orderDesc.includes("Bought") ? POSITION + args.filledQuantity : POSITION - args.filledQuantity;
 
                 log_msg.position    = POSITION;
                 log_msg.fill_px     = args.avgPrice;
-                
-                if (ORDERS[order_id])
-                
-                    delete ORDERS[order_id];
 
                 if (o.type == "quote") {
 
@@ -175,55 +193,15 @@ async function handle_order_msg(msg) {
 
                     exit();
 
-                } else if (o.type == "exit") {
-
-                    // requote
-
-                    let side            = o.side    == "BUY" ? "SELL" : "BUY";
-                    let price           = side      == "BUY" ? L1_BID_PX - MIN_OFFSET : L1_ASK_PX + MIN_OFFSET;
-                    let place_order_res = { error: 1 };
-                    
-                    while (place_order_res.error) {
-                    
-                        place_order_res = await place_order(side, "quote", price, true);
-
-                        if (place_order_res.error)
-
-                            await new Promise(resolve => setTimeout(resolve, LAG));
-
-                    }
-
-                }
+                } // else if type == exit: let init_quote replace quote
 
                 break;
 
             case "Cancelled":
 
-                if (ORDERS[order_id])
-
-                    delete ORDERS[order_id];
+                if (ORDERS[order_id]) delete ORDERS[order_id];
 
                 break;
-
-            case "Submitted":
-
-                ;
-
-            case "PreSubmitted":
-
-                ;
-
-            case "PendingSubmit":
-
-                ;
-
-            case "PendingCancel":
-
-                ;
-
-            case "Inactive":
-
-                ;
 
             default:
 
@@ -310,27 +288,39 @@ async function init_quote() {
 
     if (L1_BID_PX && L1_ASK_PX) {
 
+        if      (INIT_LOCK) return;
+        else    INIT_LOCK   = true;
+
         let place_order_res = { error: 1 };
         let order_params    = [];
 
         if (!check_quote("BUY")) order_params.push([ "BUY", "quote", L1_BID_PX - MIN_OFFSET ]);
         if (!check_quote("SELL")) order_params.push([ "SELL", "quote", L1_ASK_PX + MIN_OFFSET ]);
     
-        for (let order of order_params) {
-    
-            while (place_order_res.error) {
+        for (let params of order_params) {
             
-                place_order_res = await place_order(...order);
+            let t0 = Date.now();
 
-                if (place_order_res.error)
+            place_order_res = await place_order(...params);
 
-                    await new Promise(resolve => setTimeout(resolve, LAG));
+            if (place_order_res.error) {
 
+                // log error and try again next time
+
+                let log_msg = {
+                    ts:     format(t0, FMT),
+                    lvl:    "ERROR",
+                    fn:     "init_quote",
+                    msg:    JSON.stringify(place_order_res.error)
+                };
+
+                fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
+            
             }
     
-            place_order_res = { error: 1 };
-    
         }
+
+        INIT_LOCK = false;
 
     }
 
@@ -344,21 +334,18 @@ async function clear_quote() {
         if (o.type == "quote") {
 
             let cancel_order_res = { error: 1 };
-            let retries          = 3;
 
-            while (retries > 0) {
+            for (let i = 0; i < MAX_RETRIES; i++) {
 
                 cancel_order_res = await cancel_order(o);
 
-                if (cancel_order_res.error) {
+                if (cancel_order_res.error)
 
-                    await new Promise(resolve => setTimeout(resolve, LAG));
-
-                    retries -= 1;
+                    await new Promise(resolve => setTimeout(resolve, ERR_LAG));
                 
-                } else
+                else
 
-                    retries = 0;
+                    break;
 
             }
 
@@ -484,11 +471,11 @@ async function place_order(
     }
 
     let id  = ack_order_res[0].order_id;
-    let o   = new order(id, side, type, args.orders[0]);
+    let o   = new order(id, side, type, args.orders[0]);        
+    
+    if (type == "quote") 
         
-    if (type == "quote")
-            
-        ORDERS[id]  = o;
+        ORDERS[id] = o;
 
     if (LOGGING) {
 
@@ -615,21 +602,19 @@ async function clean_stale_quotes() {
 
             // unregistered order, eliminate
 
-            let cancel_order_res    = { error: 1 };
-            let retries             = 3;
+            let cancel_order_res = { error: 1 };
 
-            while (retries > 0) {
+            for (let i = 0; i < MAX_RETRIES; i++) {
             
-                retries             -= 1
-                cancel_order_res    = await cancel_order(o);
+                cancel_order_res = await cancel_order(o);
 
-                if (!cancel_order_res.error)
+                if (cancel_order_res.error)
 
-                    break;
+                    await new Promise(resolve => setTimeout(resolve, ERR_LAG));
                 
                 else
 
-                    await new Promise(resolve => setTimeout(resolve, LAG));
+                    break;
             
             }
 
@@ -679,7 +664,9 @@ const CONID         = parseInt(process.argv[2]);
 const TICK_SIZE     = parseFloat(process.argv[3]);
 const MIN_OFFSET    = parseInt(process.argv[4]) * TICK_SIZE;
 const MAX_OFFSET    = parseInt(process.argv[5]) * TICK_SIZE;
-const LAG           = parseInt(process.argv[6]);
+const EXIT_LAG      = parseInt(process.argv[6]);
+const ERR_LAG       = 250;
+const MAX_RETRIES   = 3;
 const COL_WIDTH     = 15;
 const LOGGING       = true;
 const LOG_FILE      = `./logs/${format(new Date(), 'yyyy-MM-dd')}_log.txt`;
@@ -690,6 +677,7 @@ const ORDERS        = {};
 let HEARTBEAT       = 0;
 let POSITION        = 0;
 let LAGGED          = false;
+let INIT_LOCK       = false;
 let L1_BID_PX       = null;
 let L1_ASK_PX       = null;
 
