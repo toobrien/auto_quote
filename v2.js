@@ -5,7 +5,7 @@ const fs                    = require("node:fs");
 const IN_MAP                = {};
 
 
-// node v2.js 620731036 0.25 5 7 9750
+// node v2.js 620731036 0.25 5 7 9750 0
 
 
 // order
@@ -130,7 +130,18 @@ async function handle_order_msg(msg) {
 
     for (let args of msg.args) {
 
-        //fs.writeFile(LOG_FILE, `${JSON.stringify(args)}\n`, { flag: "a+" }, LOG_ERR);
+        if (DEBUG) {
+        
+            let debug_msg = {
+                ts:     format(Date.now(), FMT),
+                lvl:    "DEBUG",
+                fn:     "handle_order_msg",
+                msg:    JSON.stringify(args)
+            }
+
+            fs.writeFile(LOG_FILE, `${JSON.stringify(debug_msg)}\n`, LOG_FLAG, LOG_ERR);
+        
+        }
 
         let status      = args.status;
         let order_id    = args.orderId;
@@ -423,7 +434,14 @@ async function place_order(
 
         if (check_quote(side)) {
 
-            fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"INFO","fn":"place_order","msg":"duplicate ${side} quote requested"}\n`, { flag: "a+" }, LOG_ERR);
+            let log_msg = {
+                ts:     format(Date.now(), FMT),
+                lvl:    "INFO",
+                fn:     "place_order",
+                msg:    `duplicate ${side} quote requested`
+            };
+
+            fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
 
             return res;
         }
@@ -437,7 +455,14 @@ async function place_order(
 
         if (!side) {
 
-            fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"INFO","fn":"place_order","msg":"flat, ${side} market ignored"}\n`, { flag: "a+" }, LOG_ERR);
+            let log_msg = {
+                ts:     format(Date.now(), FMT),
+                lvl:    "INFO",
+                fn:     "place_order",
+                msg:    `flat, ${side} market ignored`
+            };
+
+            fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
 
             return res;
 
@@ -454,7 +479,14 @@ async function place_order(
 
     if (place_order_res.error) {
 
-        fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"ERROR","fn":"place_order","msg":"${place_order_res.error}"}\n`, { flag: "a+" }, LOG_ERR);
+        let log_msg = {
+            ts:     format(Date.now(), FMT),
+            lvl:    "ERROR",
+            fn:     "place_order",
+            msg:    place_order_res.error
+        };
+
+        fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
 
         res = place_order_res;
 
@@ -466,7 +498,14 @@ async function place_order(
 
     if (ack_order_res.error) {
 
-        fs.writeFile(LOG_FILE, `{"ts":${format(Date.now(), FMT)},"lvl":"ERROR","fn":"ack_order","msg":"${ack_order_res.error}"}\n`, { flag: "a+" }, LOG_ERR);
+        let log_msg = {
+            ts:     format(Date.now(), FMT),
+            lvl:    "ERROR",
+            fn:     "ack_order",
+            msg:    ack_order_res.error
+        };
+
+        fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
 
         res = ack_order_res;
 
@@ -510,7 +549,14 @@ async function modify_order(o) {
 
     if (modify_order_res.error) {
 
-        fs.writeFile(LOG_FILE, `"ts":"${format(Date.now(), FMT)}","lvl":"ERROR","fn":"modfiy_order","msg":"${modify_order_res.error}"}\n`, { flag: "a+" }, LOG_ERR);
+        let log_msg = {
+            ts:     format(Date.now(), FMT),
+            lvl:    "ERROR",
+            fn:     "modify_order",
+            msg:    modify_order_res.error
+        };
+
+        fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
 
         return modify_order_res;
 
@@ -666,6 +712,7 @@ const TICK_SIZE     = parseFloat(process.argv[3]);
 const MIN_OFFSET    = parseInt(process.argv[4]) * TICK_SIZE;
 const MAX_OFFSET    = parseInt(process.argv[5]) * TICK_SIZE;
 const EXIT_LAG      = parseInt(process.argv[6]);
+const DEBUG         = parseInt(process.argv[7]);
 const ERR_LAG       = 250;
 const MAX_RETRIES   = 3;
 const COL_WIDTH     = 15;
