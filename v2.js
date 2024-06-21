@@ -178,9 +178,13 @@ async function handle_order_msg(msg) {
                     
                     delete ORDERS[order_id];
                 
-                else
+                else {
+
+                    log_msg.type = "external";
 
                     break;
+
+                }
 
                 POSITION = args.orderDesc.includes("Bought") ? POSITION + args.filledQuantity : POSITION - args.filledQuantity;
 
@@ -470,12 +474,9 @@ async function place_order(
     
     }
 
-    let id  = ack_order_res[0].order_id;
-    let o   = new order(id, side, type, args.orders[0]);        
-    
-    if (type == "quote") 
-        
-        ORDERS[id] = o;
+    let id      = ack_order_res[0].order_id;
+    let o       = new order(id, side, type, args.orders[0]);            
+    ORDERS[id]  = o;
 
     if (LOGGING) {
 
