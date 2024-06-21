@@ -180,8 +180,7 @@ async function handle_order_msg(msg) {
 
                 // TODO: when does status == "Filled" but args.orderDesc == undefined?
                 
-                // wait is needed in rare case limit is filled before ORDERS is populated;
-                // otherwise it may be a fill for another contract; type must be set correctly!
+                // wait is needed in case order is filled before added to ORDERS
 
                 await new Promise(resolve => setTimeout(resolve, ERR_LAG));
                 
