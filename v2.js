@@ -145,23 +145,25 @@ async function handle_order_msg(msg) {
 
         let status      = args.status;
         let order_id    = args.orderId;
-        let side        = args.side;
-        let type        = args.orderType ? args.orderType == "Limit" ? "quote" : "exit" : 
-                          args.orderDesc ? args.orderDesc.includes("Limit") ? "quote" : "exit" : 
-                          "unknown";
+        let conid       = args.conid;
         let o           = ORDERS[order_id];
 
-        if (!status)
+        if (!status || (!(conid == CONID) && !o))
+
+            // irrelevant message or message for other contract
 
             return;
 
-        if (!o)
+        if (conid == CONID && !o) {
 
-            // unknown order: either not added by place_order yet or placed from external source
+            // new order, ready for management
 
-            o = new order(order_id, side, type, {});
+            let side    = args.side;
+            let type    = args.orderType == "Limit" ? "quote" : "exit";
+            let price   = args.price;
+            o           = new order(order_id, side, type, { price: price });
 
-        o.status = status;
+        }
 
         let log_msg = {
             ts:         format(Date.now(), FMT),
@@ -178,42 +180,27 @@ async function handle_order_msg(msg) {
 
             case "Filled":
 
-                // TODO: when does status == "Filled" but args.orderDesc == undefined?
-                
-                // wait is needed in case order is filled before added to ORDERS
+                POSITION            = args.orderDesc.includes("Bought") ? POSITION + args.filledQuantity : POSITION - args.filledQuantity;
+                log_msg.position    = POSITION;
+                log_msg.fill_px     = parseFloat(args.avgPrice);
 
-                await new Promise(resolve => setTimeout(resolve, ERR_LAG));
-                
                 if (ORDERS[order_id])   
                     
                     delete ORDERS[order_id];
-                
-                else {
 
-                    log_msg.type = "external";
-
-                    break;
-
-                }
-
-                POSITION = args.orderDesc.includes("Bought") ? POSITION + args.filledQuantity : POSITION - args.filledQuantity;
-
-                log_msg.position    = POSITION;
-                log_msg.fill_px     = args.avgPrice;
-
-                if (o.type == "quote") {
-
-                    o.fill_px = parseFloat(args.avgPrice);
+                if (o.type == "quote")
 
                     exit();
 
-                } // else if type == exit: let init_quote replace quote
+                // else type == exit: let init_quote replace quote
 
                 break;
 
             case "Cancelled":
 
-                if (ORDERS[order_id]) delete ORDERS[order_id];
+                if (ORDERS[order_id]) 
+                    
+                    delete ORDERS[order_id];
 
                 break;
 
@@ -512,9 +499,7 @@ async function place_order(
     
     }
 
-    let id      = ack_order_res[0].order_id;
-    let o       = new order(id, side, type, args.orders[0]);            
-    ORDERS[id]  = o;
+    let id = ack_order_res[0].order_id;
 
     if (LOGGING) {
 
@@ -523,10 +508,10 @@ async function place_order(
             lvl:    "INFO",
             fn:     "place_order",
             ms:     Date.now() - t0,
-            id:     o.id,
-            side:   o.side,
-            status: o.status,
-            type:   o.type,
+            id:     id,
+            side:   side,
+            status: null,
+            type:   type,
             price:  o.args.price
         };
 
@@ -534,7 +519,7 @@ async function place_order(
 
     }
 
-    res = { order: o }
+    res = {};
 
     return res;
 
