@@ -162,6 +162,7 @@ async function handle_order_msg(msg) {
             let type    = args.orderType == "Limit" ? "quote" : "exit";
             let price   = args.price;
             o           = new order(order_id, side, type, { price: price });
+            o.status    = status;
 
         }
 
@@ -512,7 +513,7 @@ async function place_order(
             side:   side,
             status: null,
             type:   type,
-            price:  o.args.price
+            price:  price
         };
 
         fs.writeFile(LOG_FILE, `${JSON.stringify(log_msg)}\n`, LOG_FLAG, LOG_ERR);
