@@ -161,11 +161,12 @@ async function handle_order_msg(msg) {
             let side            = args.side;
             let type            = args.orderType == "Limit" ? "quote" : "exit";
             let price           = args.price;
-            o                   = new order(order_id, side, type, { price: price });
-            o.status            = status;
+            o                   = new order(String(order_id), side, type, { price: price });
             ORDERS[order_id]    = o;
 
         }
+
+        o.status = status;
 
         let log_msg = {
             ts:         format(Date.now(), FMT),
