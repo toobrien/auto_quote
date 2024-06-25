@@ -160,9 +160,23 @@ async function handle_order_msg(msg) {
 
             let side            = args.side;
             let type            = args.orderType == "Limit" ? "quote" : "exit";
-            let price           = args.price;
-            o                   = new order(String(order_id), side, type, { price: price });
-            ORDERS[order_id]    = o;
+            let price           = parseFloat(args.price); // does this work for bond prices?
+            let qty             = args.totalSize;
+            let o_args          = {
+                                    acctId:     ACCOUNT_ID,
+                                    conid:      CONID,
+                                    side:       side,
+                                    tif:        "GTC",
+                                    orderType:  type == "quote" ? "LMT" : "MKT",
+                                    quantity:   qty
+                                };
+            
+            if (type == "quote")
+
+                o_args.price = price;
+
+            o                   =   new order(String(order_id), side, type, o_args);
+            ORDERS[order_id]    =   o;
 
         }
 
