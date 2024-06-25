@@ -165,9 +165,9 @@ async function handle_order_msg(msg) {
             let o_args          = {
                                     acctId:     ACCOUNT_ID,
                                     conid:      CONID,
+                                    orderType:  type == "quote" ? "LMT" : "MKT",
                                     side:       side,
                                     tif:        "GTC",
-                                    orderType:  type == "quote" ? "LMT" : "MKT",
                                     quantity:   qty
                                 };
             
@@ -554,6 +554,12 @@ async function modify_order(o) {
             ts:     format(Date.now(), FMT),
             lvl:    "ERROR",
             fn:     "modify_order",
+            ms:     Date.now() - t0,
+            id:     o.id,
+            side:   o.side,
+            status: o.status,
+            type:   o.type,
+            price:  o.args.price,
             msg:    modify_order_res.error
         };
 
