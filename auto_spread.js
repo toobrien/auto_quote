@@ -1,6 +1,39 @@
 const { base_client, mdf }  = require("./ibkr/base_client");
 
 
+
+async function ack_order(place_order_res) {
+    
+    let message_id  = place_order_res[0].id;
+    let res         = await CLIENT.reply(message_id);
+
+    return res;
+
+}
+
+
+async function place_order(conid, side) {
+
+    let args = {
+                orders: [
+                    {
+                        acctId:     ACCOUNT_ID,
+                        conid:      conid,
+                        side:       side,
+                        tif:        "GTC",
+                        quantity:   1,
+                        orderType:  "MKT"
+                    }
+                ]
+            };
+    
+    let res = CLIENT.place_order(ACCOUNT_ID, args)
+
+    return res;
+
+}
+
+
 async function handler(evt) {
 
     if (!evt.data) 
@@ -19,16 +52,30 @@ async function handler(evt) {
 
             continue;
 
-        let order_id    = args.orderId;
         let conid       = args.conid;
         let i           = LEGS.indexOf(conid);
 
-        if (i == -1)
+        if (i == -1 | LOCK)
 
             continue;
+        
+        LOCK = true;
 
-        let spread_leg  = i == 1 ? LEGS[0] : LEGS[1];
-        let qty         = args.totalSize;
+        let spread_leg_id   = i == 1 ? LEGS[0] : LEGS[1];
+        let side            = args.orderDesc.includes("Bought") ? "SELL" : "BUY";
+        let place_order_res = await place_order(spread_leg_id, side);
+
+        if (place_order_res.error)
+
+            ;
+
+        let ack_order_res   = await ack_order(place_order_res);
+
+        if (ack_order_res.error)
+
+            ;
+
+        LOCK = false;
 
     }
     
@@ -47,11 +94,12 @@ async function init() {
 
 
 
-const ACCOUNT_ID    = process.env.IBKR_ACCOUNT_ID;
-const CLIENT        = new base_client();
-const LEGS          = [ 
+const   ACCOUNT_ID  = process.env.IBKR_ACCOUNT_ID;
+const   CLIENT      = new base_client();
+const   LEGS        = [ 
                         parseInt(process.argv[2]), 
                         parseInt(process.argv[3]) 
                     ];
+let     LOCK        = false;
 
 init();
