@@ -67,13 +67,13 @@ async function handler(evt) {
 
         if (place_order_res.error)
 
-            ;
+            console.log(JSON.stringify(place_order_res));
 
         let ack_order_res   = await ack_order(place_order_res);
 
         if (ack_order_res.error)
 
-            ;
+            console.log(JSON.stringify(ack_order_res));
 
         LOCK = false;
 
