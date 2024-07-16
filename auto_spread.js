@@ -1,5 +1,5 @@
 const { base_client, mdf }  = require("./ibkr/base_client");
-
+const { format }            = require("date-fns");
 
 
 async function ack_order(place_order_res) {
@@ -27,7 +27,7 @@ async function place_order(conid, side) {
                 ]
             };
     
-    let res = CLIENT.place_order(ACCOUNT_ID, args)
+    let res = CLIENT.place_order(ACCOUNT_ID, args);
 
     return res;
 
@@ -42,9 +42,13 @@ async function handler(evt) {
     
     let msg = JSON.parse(evt.data);
 
-    if (msg.topic != "sor")
+    if (msg.hb | msg.topic != "sor") {
+
+        HEARTBEAT = 0;
         
         return;
+
+    }
 
     for (let args of msg.args) {
     
@@ -52,8 +56,8 @@ async function handler(evt) {
 
             continue;
 
-        let conid       = args.conid;
-        let i           = LEGS.indexOf(conid);
+        let conid   = args.conid;
+        let i       = LEGS.indexOf(conid);
 
         if (i == -1 | LOCK)
 
@@ -62,23 +66,51 @@ async function handler(evt) {
         LOCK = true;
 
         let spread_leg_id   = i == 1 ? LEGS[0] : LEGS[1];
+        let fill_side       = args.orderDesc.includes("Bought") ? "BUY" : "SELL";
         let side            = args.orderDesc.includes("Bought") ? "SELL" : "BUY";
+
+        console.log(`${Date.now(), FMT},INFO,handler,${conid} ${fill_side} fill; executing ${spread_leg_id} MKT ${side}`);
+
         let place_order_res = await place_order(spread_leg_id, side);
 
-        if (place_order_res.error)
+        if (place_order_res.error) {
 
-            console.log(JSON.stringify(place_order_res));
+            console.log(`${Date.now(), FMT},ERROR,place_order,${JSON.stringify(place_order_res)}`);
+            console.log(`${Date.now(), FMT},INFO,exit`);
+
+            process.exit();
+
+        }
 
         let ack_order_res   = await ack_order(place_order_res);
 
-        if (ack_order_res.error)
+        if (ack_order_res.error) {
 
-            console.log(JSON.stringify(ack_order_res));
+            console.log(`${Date.now(), FMT},ERROR,ack_order,${JSON.stringify(place_order_res)}`);
+            console.log(`${Date.now(), FMT},INFO,exit`);
+
+            process.exit();
+
+        }
 
         LOCK = false;
 
     }
     
+
+}
+
+
+function hb_check() {
+
+    if (HEARTBEAT > 10) {
+
+        console.log(`${format(Date.now(), FMT)},INFO,hb late`);
+        console.log(`${Date.now(), FMT},INFO,exit`);
+
+        process.exit();
+
+    }
 
 }
 
@@ -91,9 +123,7 @@ async function init() {
 }
 
 
-
-
-
+const   FMT         = "yyyy-MM-dd'T'HH:mm:ss.SSS";
 const   ACCOUNT_ID  = process.env.IBKR_ACCOUNT_ID;
 const   CLIENT      = new base_client();
 const   LEGS        = [ 
@@ -101,5 +131,8 @@ const   LEGS        = [
                         parseInt(process.argv[3]) 
                     ];
 let     LOCK        = false;
+let     HEARTBEAT   = 0;
+
 
 init();
+setInterval(hb_check, 1000);
