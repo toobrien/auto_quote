@@ -2,6 +2,9 @@ const { base_client, mdf }  = require("./ibkr/base_client");
 const { format }            = require("date-fns");
 
 
+// node auto_spread.js 637533398 637533595
+
+
 async function ack_order(place_order_res) {
     
     let message_id  = place_order_res[0].id;
@@ -125,11 +128,12 @@ async function init() {
 
 const   FMT         = "yyyy-MM-dd'T'HH:mm:ss.SSS";
 const   ACCOUNT_ID  = process.env.IBKR_ACCOUNT_ID;
-const   CLIENT      = new base_client();
 const   LEGS        = [ 
                         parseInt(process.argv[2]), 
                         parseInt(process.argv[3]) 
                     ];
+const   HOST        = process.argv[4];
+const   CLIENT      = new base_client(host = HOST);
 let     LOCK        = false;
 let     HEARTBEAT   = 0;
 
