@@ -117,6 +117,20 @@ function hb_check() {
 
 }
 
+async function ping() {
+
+    let tickle_res = CLIENT.tickle();
+
+    if (tickle_res.error) {
+
+        console.log(`${format(Date.now(), FMT)},ERROR,${tickle_res.error}`);
+
+        process.exit();
+
+    }
+
+}
+
 
 async function init() {
 
@@ -132,11 +146,12 @@ const   LEGS        = [
                         parseInt(process.argv[2]), 
                         parseInt(process.argv[3]) 
                     ];
-const   HOST        = process.argv[4];
-const   CLIENT      = new base_client();
+const   HOSTNAME    = process.argv[4];
+const   CLIENT      = new base_client(HOSTNAME);
 let     LOCK        = false;
 let     HEARTBEAT   = 0;
 
 
 init();
 setInterval(hb_check, 1000);
+setInterval(ping, 60000);
