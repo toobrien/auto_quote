@@ -133,7 +133,7 @@ const   LEGS        = [
                         parseInt(process.argv[3]) 
                     ];
 const   HOST        = process.argv[4];
-const   CLIENT      = new base_client(host = HOST);
+const   CLIENT      = new base_client();
 let     LOCK        = false;
 let     HEARTBEAT   = 0;
 
