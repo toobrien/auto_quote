@@ -147,6 +147,8 @@ async function init() {
     await CLIENT.set_ws_handlers(msg_handler = handler);
     await CLIENT.sub_order_updates();
 
+    console.log(`${format(Date.now(), FMT)},INFO,init,running`);
+
 }
 
 
