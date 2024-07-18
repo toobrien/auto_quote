@@ -53,8 +53,6 @@ async function handler(evt) {
 
     }
 
-    console.log(JSON.stringify(msg));
-
     for (let args of msg.args) {
     
         if (args.status != "Filled")
@@ -64,9 +62,19 @@ async function handler(evt) {
         let conid   = args.conid;
         let i       = LEGS.indexOf(conid);
 
-        if (i == -1 | LOCK)
+        if (i == -1) {
+
+            console.log(`${Date.now()},INFO,handler,${conid} not found`);
 
             continue;
+        
+        } else if (LOCK) {
+
+            console.log(`${Date.now()},INFO,handler,lock active; ignoring fill`);
+
+            continue
+
+        }
         
         LOCK = true;
 
