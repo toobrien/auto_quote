@@ -2,7 +2,7 @@ const { base_client, mdf }  = require("./ibkr/base_client");
 const { format }            = require("date-fns");
 
 
-// node auto_spread.js 637533398 637533595
+// node spread.js 637533398 637533595
 
 
 async function ack_order(place_order_res) {
@@ -52,6 +52,8 @@ async function handler(evt) {
         return;
 
     }
+
+    console.log(JSON.stringify(msg));
 
     for (let args of msg.args) {
     
